@@ -7,7 +7,7 @@ const Signup: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const packageName = searchParams.get('package') || 'starter';
+  const packageName = searchParams.get('package');
   const billing = searchParams.get('billing') || 'monthly';
   const redirectPath = searchParams.get('redirect');
   const { signup, isAuthenticated } = useAuth();
@@ -15,6 +15,9 @@ const Signup: React.FC = () => {
   // Check if this is a setup package (from redirect path)
   const isSetupPackage = redirectPath && redirectPath.startsWith('/setup-form/');
   const setupPackageName = isSetupPackage && redirectPath ? redirectPath.replace('/setup-form/', '') : null;
+  
+  // Default packageName only if it's not a setup package
+  const finalPackageName = isSetupPackage ? null : (packageName || 'starter');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,12 +31,12 @@ const Signup: React.FC = () => {
 
   // Redirect if already authenticated (only if no package selected - means they're trying to access signup directly)
   React.useEffect(() => {
-    if (isAuthenticated && !packageName && !redirectPath) {
+    if (isAuthenticated && !finalPackageName && !redirectPath) {
       // If authenticated and no package/redirect, go to dashboard
       const from = (location.state as any)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, location, packageName, redirectPath]);
+  }, [isAuthenticated, navigate, location, finalPackageName, redirectPath]);
 
   // SaaS Package Info
   const saasPackageInfo: Record<string, { name: string; price: string }> = {
@@ -55,9 +58,9 @@ const Signup: React.FC = () => {
     ? setupPackageInfo 
     : saasPackageInfo;
   
-  const currentPackageName = isSetupPackage && setupPackageName 
+  const currentPackageName: string = isSetupPackage && setupPackageName 
     ? setupPackageName 
-    : packageName;
+    : (finalPackageName || 'starter');
 
   const features = [
     { name: 'Payment Health Score', starter: true, pro: true, scale: true },
@@ -129,11 +132,11 @@ const Signup: React.FC = () => {
     return features
       .map(feature => {
         let value: boolean | string | undefined;
-        if (packageName === 'starter') {
+        if (finalPackageName === 'starter') {
           value = feature.starter;
-        } else if (packageName === 'pro') {
+        } else if (finalPackageName === 'pro') {
           value = feature.pro;
-        } else if (packageName === 'scale') {
+        } else if (finalPackageName === 'scale') {
           value = feature.scale;
         }
         
@@ -159,27 +162,28 @@ const Signup: React.FC = () => {
       // Sign up the user
       await signup(formData.email, formData.password, formData.name, formData.company);
 
-          // Handle SaaS service (home page packages) - go to payment
-          if (packageName && ['starter', 'pro', 'scale'].includes(packageName)) {
-            // Get the newly created user from AuthContext
-            const currentUser = JSON.parse(localStorage.getItem('authUser') || '{}');
-            const userData = {
-              ...formData,
-              userId: currentUser.id,
-              package: packageName,
-              billing: billing,
-              price: finalPrice
-            };
-            // Use user-specific storage key
-            const userSignupKey = `signupData_${currentUser.id}`;
-            sessionStorage.setItem(userSignupKey, JSON.stringify(userData));
-            // Store package in user-specific localStorage
-            const userPackageKey = `userPackage_${currentUser.id}`;
-            localStorage.setItem(userPackageKey, packageName);
-            navigate(`/payment?package=${packageName}&billing=${billing}`);
-          } else if (redirectPath) {
+      // Handle Setup service FIRST (check before SaaS packages)
+      if (isSetupPackage && redirectPath) {
         // Handle Setup service - redirect to the intended setup form
         navigate(redirectPath, { replace: true });
+      } else if (finalPackageName && ['starter', 'pro', 'scale'].includes(finalPackageName)) {
+        // Handle SaaS service (home page packages) - go to payment
+        // Get the newly created user from AuthContext
+        const currentUser = JSON.parse(localStorage.getItem('authUser') || '{}');
+        const userData = {
+          ...formData,
+          userId: currentUser.id,
+          package: finalPackageName,
+          billing: billing,
+          price: finalPrice
+        };
+        // Use user-specific storage key
+        const userSignupKey = `signupData_${currentUser.id}`;
+        sessionStorage.setItem(userSignupKey, JSON.stringify(userData));
+        // Store package in user-specific localStorage
+        const userPackageKey = `userPackage_${currentUser.id}`;
+        localStorage.setItem(userPackageKey, finalPackageName);
+        navigate(`/payment?package=${finalPackageName}&billing=${billing}`);
       } else {
         // Default redirect to dashboard
         navigate('/dashboard', { replace: true });
@@ -208,7 +212,7 @@ const Signup: React.FC = () => {
             ? `Sign up for ${currentPackage.name}. ${'description' in currentPackage ? (currentPackage as { description: string }).description : ''}`
             : `Sign up for Fynteq Pulse ${currentPackage.name} plan. Start monitoring your Stripe & PayPal payments with ${currentPackage.name} features.`
         } />
-        <link rel="canonical" href={`https://fynteq.com/signup${isSetupPackage ? `?redirect=${redirectPath}` : `?package=${packageName}&billing=${billing}`}`} />
+        <link rel="canonical" href={`https://fynteq.com/signup${isSetupPackage ? `?redirect=${redirectPath}` : `?package=${finalPackageName}&billing=${billing}`}`} />
       </Helmet>
       <div className="max-w-4xl mx-auto px-6">
         <div className="text-center mb-8">

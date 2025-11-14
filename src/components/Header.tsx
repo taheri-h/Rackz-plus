@@ -11,6 +11,7 @@ const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [userPackage, setUserPackage] = useState<string>('');
+  const [hasSetupPackages, setHasSetupPackages] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -24,10 +25,62 @@ const Header: React.FC = () => {
   // Load user's package for dashboard link
   useEffect(() => {
     if (user) {
+      // Check for SaaS packages (starter, pro, scale)
       const userPackageKey = `userPackage_${user.id}`;
       const storedPackage = localStorage.getItem(userPackageKey);
       if (storedPackage && ['starter', 'pro', 'scale'].includes(storedPackage)) {
         setUserPackage(storedPackage);
+        setHasSetupPackages(false);
+      } else {
+        // Check for setup packages (checkout, subscriptions, crm, marketplace)
+        const userSetupKey = `userSetupRequests_${user.id}`;
+        const setupRequests = localStorage.getItem(userSetupKey);
+        if (setupRequests) {
+          try {
+            const requests = JSON.parse(setupRequests);
+            // Check if user has any setup requests with payment completed
+            const hasPaidSetup = requests.some((req: any) => 
+              req.paymentStatus === 'completed' && 
+              ['checkout', 'subscriptions', 'crm', 'marketplace'].includes(req.package)
+            );
+            if (hasPaidSetup) {
+              setHasSetupPackages(true);
+              setUserPackage('');
+            }
+          } catch (e) {
+            // If parsing fails, check sessionStorage for recent setup payment
+            const userPaymentKey = `setupPaymentData_${user.id}`;
+            const setupPayment = sessionStorage.getItem(userPaymentKey);
+            if (setupPayment) {
+              try {
+                const payment = JSON.parse(setupPayment);
+                if (payment.paymentStatus === 'completed' && 
+                    ['checkout', 'subscriptions', 'crm', 'marketplace'].includes(payment.package)) {
+                  setHasSetupPackages(true);
+                  setUserPackage('');
+                }
+              } catch (e) {
+                // Ignore parsing errors
+              }
+            }
+          }
+        } else {
+          // Also check sessionStorage for recent setup payment
+          const userPaymentKey = `setupPaymentData_${user.id}`;
+          const setupPayment = sessionStorage.getItem(userPaymentKey);
+          if (setupPayment) {
+            try {
+              const payment = JSON.parse(setupPayment);
+              if (payment.paymentStatus === 'completed' && 
+                  ['checkout', 'subscriptions', 'crm', 'marketplace'].includes(payment.package)) {
+                setHasSetupPackages(true);
+                setUserPackage('');
+              }
+            } catch (e) {
+              // Ignore parsing errors
+            }
+          }
+        }
       }
     }
   }, [user]);
@@ -108,7 +161,11 @@ const Header: React.FC = () => {
   };
 
   const getDashboardUrl = () => {
-    // If user has a package, include it in the URL
+    // If user has setup packages, route to setup dashboard
+    if (hasSetupPackages) {
+      return '/setup-dashboard';
+    }
+    // If user has a SaaS package, include it in the URL
     if (userPackage) {
       return `/dashboard?package=${userPackage}`;
     }

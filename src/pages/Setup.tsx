@@ -19,12 +19,8 @@ const Setup: React.FC = () => {
   };
 
   const handleSetupClick = (packageName: string) => {
-    if (!isAuthenticated) {
-      // Store the intended destination
-      navigate(`/signup?redirect=/setup-form/${packageName}`);
-    } else {
-      navigate(`/setup-form/${packageName}`);
-    }
+    // Route directly to signup with redirect to setup form
+    navigate(`/signup?redirect=/setup-form/${packageName}`);
   };
 
   const faqs = [

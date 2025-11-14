@@ -17,11 +17,49 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     
+    // First, check if user has setup packages - if so, redirect to setup-dashboard
+    const userSetupKey = `userSetupRequests_${user.id}`;
+    const setupRequests = localStorage.getItem(userSetupKey);
+    const userPaymentKey = `setupPaymentData_${user.id}`;
+    const setupPayment = sessionStorage.getItem(userPaymentKey);
+    
+    let hasSetupPackages = false;
+    
+    // Check localStorage for setup requests
+    if (setupRequests) {
+      try {
+        const requests = JSON.parse(setupRequests);
+        hasSetupPackages = requests.some((req: any) => 
+          req.paymentStatus === 'completed' && 
+          ['checkout', 'subscriptions', 'crm', 'marketplace'].includes(req.package)
+        );
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+    
+    // Check sessionStorage for recent setup payment
+    if (!hasSetupPackages && setupPayment) {
+      try {
+        const payment = JSON.parse(setupPayment);
+        hasSetupPackages = payment.paymentStatus === 'completed' && 
+          ['checkout', 'subscriptions', 'crm', 'marketplace'].includes(payment.package);
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+    
+    // If user has setup packages, redirect to setup-dashboard
+    if (hasSetupPackages) {
+      navigate('/setup-dashboard', { replace: true });
+      return;
+    }
+    
     // Get package from URL params, payment data, or user data
     const urlPackage = searchParams.get('package');
     
     // Use user-specific storage keys
-    const userPaymentKey = `paymentData_${user.id}`;
+    const userSaaSPaymentKey = `paymentData_${user.id}`;
     const userPackageKey = `userPackage_${user.id}`;
     
     let foundPackage = '';
@@ -33,7 +71,7 @@ const Dashboard: React.FC = () => {
       localStorage.setItem(userPackageKey, urlPackage);
     } else {
       // Check sessionStorage for recent payment
-      const stored = sessionStorage.getItem(userPaymentKey);
+      const stored = sessionStorage.getItem(userSaaSPaymentKey);
       if (stored) {
         const data = JSON.parse(stored);
         // Only use if it belongs to current user

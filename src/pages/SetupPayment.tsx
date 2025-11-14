@@ -13,11 +13,11 @@ const SetupPayment: React.FC = () => {
   // Only allow setup packages (checkout, subscriptions, crm, marketplace) on this page
   const validSetupPackages = ['checkout', 'subscriptions', 'crm', 'marketplace'];
 
-  const packageInfo: Record<string, { name: string; price: string }> = {
-    'checkout': { name: 'Stripe Checkout Setup', price: '€299' },
-    'subscriptions': { name: 'Subscriptions Setup', price: '€749' },
-    'crm': { name: 'CRM Integration', price: '€1499' },
-    'marketplace': { name: 'Marketplace Setup', price: 'from €1999' }
+  const packageInfo: Record<string, { name: string; price: string; fullPrice: number }> = {
+    'checkout': { name: 'Stripe Checkout Setup', price: '€299', fullPrice: 299 },
+    'subscriptions': { name: 'Subscriptions Setup', price: '€749', fullPrice: 749 },
+    'crm': { name: 'CRM Integration', price: '€1499', fullPrice: 1499 },
+    'marketplace': { name: 'Marketplace Setup', price: 'from €1999', fullPrice: 1999 }
   };
 
   // Redirect if not a valid setup package
@@ -55,6 +55,12 @@ const SetupPayment: React.FC = () => {
   }
 
   const currentPackage = packageInfo[packageName] || packageInfo['checkout'];
+  
+  // Calculate 50% upfront payment (round up to nearest whole number)
+  const upfrontAmount = Math.ceil(currentPackage.fullPrice / 2);
+  const upfrontPrice = packageName === 'marketplace' 
+    ? `from €${upfrontAmount}` 
+    : `€${upfrontAmount}`;
 
   const handlePayment = async () => {
     if (!user) {
@@ -81,7 +87,10 @@ const SetupPayment: React.FC = () => {
         paymentDate: new Date().toISOString(),
         package: packageName,
         packageName: currentPackage.name,
-        price: currentPackage.price
+        fullPrice: currentPackage.price,
+        upfrontAmount: upfrontPrice,
+        fullPriceValue: currentPackage.fullPrice,
+        upfrontAmountValue: upfrontAmount
       };
 
       // Use user-specific storage keys
@@ -151,10 +160,16 @@ const SetupPayment: React.FC = () => {
                 <span className="text-slate-900 font-medium">{setupData.company}</span>
               </div>
               <div className="pt-3 border-t border-slate-200">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-lg font-semibold text-slate-900">Total</span>
-                  <span className="text-2xl font-bold text-slate-900">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-slate-600">Full Price</span>
+                  <span className="text-slate-600 line-through">
                     {currentPackage.price}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-lg font-semibold text-slate-900">Amount Due Now (50%)</span>
+                  <span className="text-2xl font-bold text-slate-900">
+                    {upfrontPrice}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 text-left">50% upfront, 50% after delivery.</p>
@@ -210,7 +225,7 @@ const SetupPayment: React.FC = () => {
                 : 'button-primary'
             }`}
           >
-            {isProcessing ? 'Processing Payment...' : `Pay ${currentPackage.price}`}
+            {isProcessing ? 'Processing Payment...' : `Pay ${upfrontPrice} Now`}
           </button>
 
           <p className="mt-4 text-xs text-center text-slate-500">

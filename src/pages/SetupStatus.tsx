@@ -160,8 +160,26 @@ const SetupStatus: React.FC = () => {
               <span className="text-slate-900 font-medium">{paymentData.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Amount Paid</span>
-              <span className="text-slate-900 font-medium">{currentPackage.price}</span>
+              <span className="text-slate-600">Amount Paid (50% Upfront)</span>
+              <span className="text-slate-900 font-medium">
+                {paymentData.upfrontAmount || currentPackage.price}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600">Full Price</span>
+              <span className="text-slate-600 line-through">
+                {paymentData.fullPrice || currentPackage.price}
+              </span>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-slate-200">
+              <span className="text-slate-600">Remaining Balance</span>
+              <span className="text-slate-900 font-medium">
+                {paymentData.upfrontAmount 
+                  ? (paymentData.fullPriceValue 
+                      ? `€${(paymentData.fullPriceValue - paymentData.upfrontAmountValue).toFixed(2)}`
+                      : 'Due after delivery')
+                  : 'Due after delivery'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Order Date</span>

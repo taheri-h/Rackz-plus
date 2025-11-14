@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SetupRequest {
   id: string;
@@ -22,6 +23,7 @@ interface SetupRequest {
 }
 
 const SetupDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<SetupRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,53 +31,63 @@ const SetupDashboard: React.FC = () => {
     window.scrollTo(0, 0);
     // Load user's setup requests from localStorage/sessionStorage
     // In a real app, this would be an API call
-    loadUserRequests();
-  }, []);
+    if (user) {
+      loadUserRequests();
+    }
+  }, [user]);
 
   const loadUserRequests = () => {
+    if (!user) return;
+    
     setLoading(true);
     
-    // Get all setup requests from localStorage
+    // Get user-specific setup requests from localStorage
     // In production, this would fetch from an API
     const allRequests: SetupRequest[] = [];
     
-    // First, check localStorage for saved requests
-    const savedRequests = localStorage.getItem('userSetupRequests');
+    // Use user-specific key for storage
+    const userStorageKey = `userSetupRequests_${user.id}`;
+    const savedRequests = localStorage.getItem(userStorageKey);
     if (savedRequests) {
       const parsed = JSON.parse(savedRequests);
-      allRequests.push(...parsed);
+      // Filter by current user's email to ensure only their requests
+      const userRequests = parsed.filter((r: SetupRequest) => r.email === user.email);
+      allRequests.push(...userRequests);
     }
 
     // Also check for current payment data in sessionStorage (if not already in localStorage)
     const paymentData = sessionStorage.getItem('setupPaymentData');
     if (paymentData) {
       const data = JSON.parse(paymentData);
-      const exists = allRequests.find(r => r.email === data.email && r.packageName === data.package);
-      if (!exists) {
-        allRequests.push({
-          id: `request-${Date.now()}`,
-          packageName: data.package || 'checkout',
-          packageDisplayName: data.packageName || 'Stripe Checkout Setup',
-          price: data.price || '€299',
-          company: data.company || '',
-          email: data.email || '',
-          name: data.name || '',
-          phone: data.phone || '',
-          industry: data.industry || '',
-          status: 'payment_completed',
-          paymentDate: data.paymentDate || new Date().toISOString(),
-          createdAt: data.paymentDate || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          timeline: data.timeline || '',
-          preferredContactMethod: data.preferredContactMethod || 'email',
-          notes: 'Payment completed. Setup will begin within 2-7 business days.'
-        });
+      // Only add if it belongs to the current user
+      if (data.email === user.email) {
+        const exists = allRequests.find(r => r.email === data.email && r.packageName === data.package);
+        if (!exists) {
+          allRequests.push({
+            id: `request-${Date.now()}`,
+            packageName: data.package || 'checkout',
+            packageDisplayName: data.packageName || 'Stripe Checkout Setup',
+            price: data.price || '€299',
+            company: data.company || '',
+            email: data.email || '',
+            name: data.name || '',
+            phone: data.phone || '',
+            industry: data.industry || '',
+            status: 'payment_completed',
+            paymentDate: data.paymentDate || new Date().toISOString(),
+            createdAt: data.paymentDate || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            timeline: data.timeline || '',
+            preferredContactMethod: data.preferredContactMethod || 'email',
+            notes: 'Payment completed. Setup will begin within 2-7 business days.'
+          });
+        }
       }
     }
 
-    // Save to localStorage for persistence
+    // Save to user-specific localStorage for persistence
     if (allRequests.length > 0) {
-      localStorage.setItem('userSetupRequests', JSON.stringify(allRequests));
+      localStorage.setItem(userStorageKey, JSON.stringify(allRequests));
     }
 
     setRequests(allRequests);

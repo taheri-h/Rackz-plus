@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../contexts/AuthContext';
 
 const SetupStatus: React.FC = () => {
   const { packageName } = useParams<{ packageName: string }>();
+  const { user } = useAuth();
   const [paymentData, setPaymentData] = useState<any>(null);
 
   const packageInfo: Record<string, { name: string; price: string }> = {
@@ -17,12 +19,19 @@ const SetupStatus: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Get payment data from sessionStorage
-    const stored = sessionStorage.getItem('setupPaymentData');
+    if (!user) return;
+    
+    // Get payment data from user-specific sessionStorage
+    const userPaymentKey = `setupPaymentData_${user.id}`;
+    const stored = sessionStorage.getItem(userPaymentKey);
     if (stored) {
-      setPaymentData(JSON.parse(stored));
+      const data = JSON.parse(stored);
+      // Only use if it belongs to current user
+      if (data.email === user.email) {
+        setPaymentData(data);
+      }
     }
-  }, []);
+  }, [user]);
 
   if (!paymentData) {
     return (

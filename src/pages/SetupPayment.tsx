@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../contexts/AuthContext';
 
 const SetupPayment: React.FC = () => {
   const { packageName } = useParams<{ packageName: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [setupData, setSetupData] = useState<any>(null);
 
@@ -25,16 +27,28 @@ const SetupPayment: React.FC = () => {
       return;
     }
 
+    if (!user) {
+      navigate('/signin');
+      return;
+    }
+
     window.scrollTo(0, 0);
-    // Get form data from sessionStorage
-    const stored = sessionStorage.getItem('setupFormData');
+    // Get form data from user-specific sessionStorage
+    const userFormKey = `setupFormData_${user.id}`;
+    const stored = sessionStorage.getItem(userFormKey);
     if (stored) {
-      setSetupData(JSON.parse(stored));
+      const data = JSON.parse(stored);
+      // Only use if it belongs to current user
+      if (data.email === user.email) {
+        setSetupData(data);
+      } else {
+        navigate(`/setup-form/${packageName}`);
+      }
     } else {
       // If no form data, redirect back to form
       navigate(`/setup-form/${packageName}`);
     }
-  }, [packageName, navigate]);
+  }, [packageName, navigate, user]);
 
   if (!packageName || !validSetupPackages.includes(packageName)) {
     return null;
@@ -43,18 +57,26 @@ const SetupPayment: React.FC = () => {
   const currentPackage = packageInfo[packageName] || packageInfo['checkout'];
 
   const handlePayment = async () => {
+    if (!user) {
+      alert('Please sign in to complete payment');
+      navigate('/signin');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       // Here you would integrate with Stripe Checkout
       // For now, we'll simulate successful payment
-      
+
       // Simulate API call to create Stripe Checkout session
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Store payment confirmation
+      // Store payment confirmation with user-specific keys
       const paymentData = {
         ...setupData,
+        email: user.email,
+        userId: user.id,
         paymentStatus: 'completed',
         paymentDate: new Date().toISOString(),
         package: packageName,
@@ -62,11 +84,16 @@ const SetupPayment: React.FC = () => {
         price: currentPackage.price
       };
 
-      sessionStorage.setItem('setupPaymentData', JSON.stringify(paymentData));
-      sessionStorage.removeItem('setupFormData'); // Clean up form data
+      // Use user-specific storage keys
+      const userPaymentKey = `setupPaymentData_${user.id}`;
+      const userFormKey = `setupFormData_${user.id}`;
+      
+      sessionStorage.setItem(userPaymentKey, JSON.stringify(paymentData));
+      sessionStorage.removeItem(userFormKey); // Clean up form data
 
-      // Save to user requests
-      const userRequests = localStorage.getItem('userSetupRequests') || '[]';
+      // Save to user-specific requests
+      const userStorageKey = `userSetupRequests_${user.id}`;
+      const userRequests = localStorage.getItem(userStorageKey) || '[]';
       const parsed = JSON.parse(userRequests);
       parsed.push({
         id: `request-${Date.now()}`,
@@ -75,7 +102,7 @@ const SetupPayment: React.FC = () => {
         createdAt: paymentData.paymentDate,
         updatedAt: new Date().toISOString()
       });
-      localStorage.setItem('userSetupRequests', JSON.stringify(parsed));
+      localStorage.setItem(userStorageKey, JSON.stringify(parsed));
 
       // Redirect to status page
       navigate(`/setup-status/${packageName}`);

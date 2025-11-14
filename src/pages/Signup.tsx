@@ -159,19 +159,25 @@ const Signup: React.FC = () => {
       // Sign up the user
       await signup(formData.email, formData.password, formData.name, formData.company);
 
-      // Handle SaaS service (home page packages) - go to payment
-      if (packageName && ['starter', 'pro', 'scale'].includes(packageName)) {
-        const userData = {
-          ...formData,
-          package: packageName,
-          billing: billing,
-          price: finalPrice
-        };
-        sessionStorage.setItem('signupData', JSON.stringify(userData));
-        // Store package in localStorage
-        localStorage.setItem('userPackage', packageName);
-        navigate(`/payment?package=${packageName}&billing=${billing}`);
-      } else if (redirectPath) {
+          // Handle SaaS service (home page packages) - go to payment
+          if (packageName && ['starter', 'pro', 'scale'].includes(packageName)) {
+            // Get the newly created user from AuthContext
+            const currentUser = JSON.parse(localStorage.getItem('authUser') || '{}');
+            const userData = {
+              ...formData,
+              userId: currentUser.id,
+              package: packageName,
+              billing: billing,
+              price: finalPrice
+            };
+            // Use user-specific storage key
+            const userSignupKey = `signupData_${currentUser.id}`;
+            sessionStorage.setItem(userSignupKey, JSON.stringify(userData));
+            // Store package in user-specific localStorage
+            const userPackageKey = `userPackage_${currentUser.id}`;
+            localStorage.setItem(userPackageKey, packageName);
+            navigate(`/payment?package=${packageName}&billing=${billing}`);
+          } else if (redirectPath) {
         // Handle Setup service - redirect to the intended setup form
         navigate(redirectPath, { replace: true });
       } else {

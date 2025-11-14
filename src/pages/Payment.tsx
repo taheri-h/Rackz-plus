@@ -23,12 +23,19 @@ const Payment: React.FC = () => {
       return;
     }
 
-    // Get signup data from sessionStorage
-    const stored = sessionStorage.getItem('signupData');
+    if (!user) return;
+
+    // Get signup data from user-specific sessionStorage
+    const userSignupKey = `signupData_${user.id}`;
+    const stored = sessionStorage.getItem(userSignupKey);
     if (stored) {
-      setSignupData(JSON.parse(stored));
+      const data = JSON.parse(stored);
+      // Only use if it belongs to current user
+      if (data.email === user.email) {
+        setSignupData(data);
+      }
     }
-  }, [packageName, navigate]);
+  }, [packageName, navigate, user]);
 
   const packageInfo: Record<string, { name: string; price: string }> = {
     'starter': { name: 'Starter', price: '€29' },
@@ -48,27 +55,39 @@ const Payment: React.FC = () => {
   const finalPrice = billing === 'yearly' ? Math.round(monthlyPrice * 12 * 0.66) : monthlyPrice;
 
   const handlePayment = async () => {
+    if (!user) {
+      alert('Please sign in to complete payment');
+      navigate('/signin');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       // Here you would integrate with Stripe Checkout or PayPal
       // For now, we'll simulate successful payment
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Store payment confirmation
+      // Store payment confirmation with user-specific keys
       const paymentData = {
         ...signupData,
+        email: user.email,
+        userId: user.id,
         paymentStatus: 'completed',
         amount: finalPrice,
         billing: billing,
         package: packageName
       };
 
-      sessionStorage.setItem('paymentData', JSON.stringify(paymentData));
+      // Use user-specific storage keys
+      const userPaymentKey = `paymentData_${user.id}`;
+      const userPackageKey = `userPackage_${user.id}`;
+      
+      sessionStorage.setItem(userPaymentKey, JSON.stringify(paymentData));
       // Also store in localStorage for persistence
-      localStorage.setItem('userPackage', packageName);
+      localStorage.setItem(userPackageKey, packageName);
 
       // Redirect to dashboard with package info
       navigate(`/dashboard?package=${packageName}`);

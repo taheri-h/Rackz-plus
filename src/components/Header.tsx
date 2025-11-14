@@ -10,6 +10,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userPackage, setUserPackage] = useState<string>('');
   const location = useLocation();
 
   useEffect(() => {
@@ -19,6 +20,17 @@ const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Load user's package for dashboard link
+  useEffect(() => {
+    if (user) {
+      const userPackageKey = `userPackage_${user.id}`;
+      const storedPackage = localStorage.getItem(userPackageKey);
+      if (storedPackage && ['starter', 'pro', 'scale'].includes(storedPackage)) {
+        setUserPackage(storedPackage);
+      }
+    }
+  }, [user]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -95,6 +107,15 @@ const Header: React.FC = () => {
     return 'U';
   };
 
+  const getDashboardUrl = () => {
+    // If user has a package, include it in the URL
+    if (userPackage) {
+      return `/dashboard?package=${userPackage}`;
+    }
+    // Default to dashboard without package (will load from localStorage)
+    return '/dashboard';
+  };
+
   return (
     <nav className={`bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 ${isScrolled ? 'shadow-sm bg-white/98' : ''}`}>
       <div className="max-w-6xl mx-auto px-6">
@@ -129,7 +150,7 @@ const Header: React.FC = () => {
                       <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                     </div>
                     <Link
-                      to="/setup-dashboard"
+                      to={getDashboardUrl()}
                       onClick={() => setIsUserMenuOpen(false)}
                       className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
@@ -182,7 +203,7 @@ const Header: React.FC = () => {
                       <p className="text-slate-500 text-xs truncate max-w-[200px]">{user?.email}</p>
                     </div>
                   </div>
-                  <Link to="/setup-dashboard" className="block text-slate-600 hover:text-slate-900 text-sm font-medium py-2 transition-colors text-center" onClick={closeMobileMenu}>Dashboard</Link>
+                  <Link to={getDashboardUrl()} className="block text-slate-600 hover:text-slate-900 text-sm font-medium py-2 transition-colors text-center" onClick={closeMobileMenu}>Dashboard</Link>
                   <button onClick={handleSignout} className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors block text-center">Sign out</button>
                 </>
               ) : (

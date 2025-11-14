@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FormData {
   // Step 1: Personal Information
@@ -31,6 +32,7 @@ interface FormData {
 const SetupForm: React.FC = () => {
   const { packageName } = useParams<{ packageName: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -106,31 +108,40 @@ const SetupForm: React.FC = () => {
     setError('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError('');
+      const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
 
-    try {
-      // Store form data in sessionStorage
-      const setupData = {
-        ...formData,
-        package: packageName,
-        packageName: currentPackage.name,
-        price: currentPackage.price
+        if (!user) {
+          setError('Please sign in to continue');
+          navigate('/signin');
+          return;
+        }
+
+        try {
+          // Store form data in user-specific sessionStorage
+          const setupData = {
+            ...formData,
+            email: user.email,
+            userId: user.id,
+            package: packageName,
+            packageName: currentPackage.name,
+            price: currentPackage.price
+          };
+
+          const userFormKey = `setupFormData_${user.id}`;
+          sessionStorage.setItem(userFormKey, JSON.stringify(setupData));
+
+          // Redirect to payment page
+          navigate(`/setup-payment/${packageName}`);
+        } catch (err) {
+          setError('Failed to submit form. Please try again.');
+          console.error('Form submission error:', err);
+        } finally {
+          setIsSubmitting(false);
+        }
       };
-
-      sessionStorage.setItem('setupFormData', JSON.stringify(setupData));
-
-      // Redirect to payment page
-      navigate(`/setup-payment/${packageName}`);
-    } catch (err) {
-      setError('Failed to submit form. Please try again.');
-      console.error('Form submission error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const totalSteps = 4;
   const progress = (currentStep / totalSteps) * 100;

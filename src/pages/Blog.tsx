@@ -134,6 +134,7 @@ const Blog: React.FC = () => {
       <section className="bg-white py-20 border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center">
+            {/* Note: dangerouslySetInnerHTML used for i18n translation - content is trusted */}
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6" dangerouslySetInnerHTML={{__html: t('blog.title')}}>
             </h1>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">

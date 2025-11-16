@@ -16,25 +16,41 @@ const generateToken = (userId) => {
 // @access  Public
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, company } = req.body;
 
     // Validation
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Please provide email, password, and name' });
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Sanitize inputs
+    const sanitizedEmail = email.toLowerCase().trim();
+    const sanitizedName = name.trim();
+    const sanitizedCompany = company ? company.trim() : null;
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: sanitizedEmail });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
     // Create user
     const user = new User({
-      email: email.toLowerCase(),
+      email: sanitizedEmail,
       passwordHash: password, // Will be hashed by pre-save hook
-      name,
-      company: company || null,
+      name: sanitizedName,
+      company: sanitizedCompany,
     });
 
     await user.save();
@@ -71,8 +87,11 @@ router.post('/signin', async (req, res) => {
       return res.status(400).json({ error: 'Please provide email and password' });
     }
 
+    // Sanitize email
+    const sanitizedEmail = email.toLowerCase().trim();
+
     // Find user
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: sanitizedEmail });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

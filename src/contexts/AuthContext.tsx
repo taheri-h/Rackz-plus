@@ -173,8 +173,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     sessionStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
-    // Remove old credentials if they exist
-    localStorage.removeItem('authCredentials');
   };
 
   const getAuthToken = () => {

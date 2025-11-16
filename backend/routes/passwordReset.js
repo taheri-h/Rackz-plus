@@ -17,8 +17,17 @@ router.post('/forgot', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Sanitize email
+    const sanitizedEmail = email.toLowerCase().trim();
+
     // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: sanitizedEmail });
     
     // Always return success (security: don't reveal if email exists)
     if (!user) {
@@ -40,14 +49,12 @@ router.post('/forgot', async (req, res) => {
     await passwordReset.save();
 
     // In production, send email here with reset link
-    // For now, we'll return the token (remove this in production!)
+    // For development, return the reset link in response
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
-    
-    console.log('Password reset link:', resetLink); // Remove in production!
 
     res.json({
       message: 'If an account with that email exists, a password reset link has been sent.',
-      // Remove this in production - only for development
+      // Only return reset link in development mode
       resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined,
     });
   } catch (error) {
@@ -103,8 +110,8 @@ router.post('/reset', async (req, res) => {
       return res.status(400).json({ error: 'Token and new password are required' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
     // Find valid token
@@ -151,8 +158,8 @@ router.post('/change', auth, async (req, res) => {
       return res.status(400).json({ error: 'Current password and new password are required' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
     }
 
     // Get user with password hash

@@ -25,14 +25,21 @@ router.post('/saas', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid billing cycle' });
     }
 
+    // Validate amountCents is a positive number
+    const amount = parseInt(amountCents, 10);
+    if (isNaN(amount) || amount <= 0 || amount > 100000000) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
     // Create payment record
     const payment = new SaasPayment({
       userId: req.user._id,
       plan,
       billingCycle,
-      amountCents,
-      status: status || 'pending',
-      providerPaymentId: providerPaymentId || null,
+      amountCents: amount,
+      status: status && ['pending', 'succeeded', 'failed', 'refunded'].includes(status) ? status : 'pending',
+      provider: 'stripe',
+      providerPaymentId: providerPaymentId ? String(providerPaymentId).trim().substring(0, 200) : null,
     });
 
     await payment.save();

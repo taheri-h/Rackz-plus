@@ -56,7 +56,10 @@ router.post('/request', auth, async (req, res) => {
     const upfrontPaidCents = Math.ceil(fullPriceCents / 2);
     const remainingCents = fullPriceCents - upfrontPaidCents;
 
-    // Create setup request with all form details
+    // Sanitize string inputs
+    const sanitizeString = (str) => str ? String(str).trim().substring(0, 500) : null;
+
+    // Create setup request with all form details (sanitized)
     const setupRequest = new SetupRequest({
       userId: req.user._id,
       packageName,
@@ -66,20 +69,20 @@ router.post('/request', auth, async (req, res) => {
       status: 'initiated',
       contactMethod,
       details: {
-        company: company || null,
-        website: website || null,
-        phone: phone || null,
-        industry: industry || null,
-        businessType: businessType || null,
-        monthlyRevenue: monthlyRevenue || null,
-        country: country || null,
-        currentPaymentProvider: currentPaymentProvider || null,
-        platform: platform || null,
-        crm: crm || null,
-        additionalRequirements: additionalRequirements || null,
-        timeline: timeline || null,
-        timezone: timezone || null,
-        notes: notes || null,
+        company: sanitizeString(company),
+        website: sanitizeString(website),
+        phone: sanitizeString(phone),
+        industry: sanitizeString(industry),
+        businessType: sanitizeString(businessType),
+        monthlyRevenue: sanitizeString(monthlyRevenue),
+        country: sanitizeString(country),
+        currentPaymentProvider: sanitizeString(currentPaymentProvider),
+        platform: sanitizeString(platform),
+        crm: sanitizeString(crm),
+        additionalRequirements: sanitizeString(additionalRequirements),
+        timeline: sanitizeString(timeline),
+        timezone: sanitizeString(timezone),
+        notes: sanitizeString(notes),
       },
     });
 
@@ -121,11 +124,22 @@ router.post('/payment', auth, async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Validate setupRequestId is a valid ObjectId
+    if (!setupRequestId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid setup request ID' });
+    }
+
     if (!['upfront', 'final'].includes(chargeType)) {
       return res.status(400).json({ error: 'Invalid charge type' });
     }
 
-    // Find setup request
+    // Validate amountCents is a positive number
+    const amount = parseInt(amountCents, 10);
+    if (isNaN(amount) || amount <= 0 || amount > 100000000) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    // Find setup request (userId ensures user isolation)
     const setupRequest = await SetupRequest.findOne({
       _id: setupRequestId,
       userId: req.user._id,
@@ -140,9 +154,10 @@ router.post('/payment', auth, async (req, res) => {
       userId: req.user._id,
       setupRequestId,
       chargeType,
-      amountCents,
-      status: status || 'pending',
-      providerPaymentId: providerPaymentId || null,
+      amountCents: amount,
+      status: status && ['pending', 'succeeded', 'failed', 'refunded'].includes(status) ? status : 'pending',
+      provider: 'stripe',
+      providerPaymentId: providerPaymentId ? String(providerPaymentId).trim().substring(0, 200) : null,
     });
 
     await payment.save();
@@ -218,6 +233,11 @@ router.get('/requests', auth, async (req, res) => {
 router.get('/status/:requestId', auth, async (req, res) => {
   try {
     const { requestId } = req.params;
+
+    // Validate requestId is a valid ObjectId
+    if (!requestId || !requestId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid request ID' });
+    }
 
     const setupRequest = await SetupRequest.findOne({
       _id: requestId,

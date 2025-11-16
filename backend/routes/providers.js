@@ -20,6 +20,11 @@ router.post('/connect', auth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid provider' });
     }
 
+    // Sanitize metadata (limit size and ensure it's an object)
+    const sanitizedMetadata = metadata && typeof metadata === 'object' 
+      ? JSON.parse(JSON.stringify(metadata).substring(0, 1000)) 
+      : {};
+
     // Check if already connected
     const existing = await ConnectedProvider.findOne({
       userId: req.user._id,
@@ -29,7 +34,7 @@ router.post('/connect', auth, async (req, res) => {
     if (existing) {
       // Update existing connection
       existing.status = 'connected';
-      existing.metadata = metadata || {};
+      existing.metadata = sanitizedMetadata;
       await existing.save();
 
       return res.json({
@@ -47,7 +52,7 @@ router.post('/connect', auth, async (req, res) => {
       userId: req.user._id,
       provider,
       status: 'connected',
-      metadata: metadata || {},
+      metadata: sanitizedMetadata,
     });
 
     await connectedProvider.save();

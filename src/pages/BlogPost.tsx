@@ -5336,6 +5336,8 @@ const price = await stripe.prices.create({
         </div>
 
         {/* Article Content */}
+        {/* Note: dangerouslySetInnerHTML is used for blog content from trusted CMS source */}
+        {/* In production, ensure blogPost.content is sanitized server-side */}
         <div className="prose prose-lg max-w-none mb-12">
           <div dangerouslySetInnerHTML={{ __html: blogPost.content }} />
         </div>

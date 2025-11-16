@@ -86,14 +86,6 @@ Server runs on `http://localhost:5001`
 
 ---
 
-## 📚 Documentation
-
-- **Database Structure**: See `DATABASE_COMPLETE.md`
-- **Password Reset**: See `PASSWORD_RESET_GUIDE.md`
-- **MongoDB Setup**: See `MONGODB_SETUP.md`
-
----
-
 ## 🚨 Important Notes
 
 1. **JWT Secret**: Change `JWT_SECRET` to a strong random string before production

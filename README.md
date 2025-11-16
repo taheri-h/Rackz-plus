@@ -38,16 +38,11 @@ The `dist/` folder contains everything:
 3. Run `npm install` in `api/` folder
 4. Start backend: `node api/server.js`
 
-See `DEPLOYMENT.md` for detailed instructions.
-
 ---
 
 ## 📚 Documentation
 
 - **Backend API**: `backend/README.md`
-- **Database Structure**: `backend/DATABASE_COMPLETE.md`
-- **Password Reset**: `backend/PASSWORD_RESET_GUIDE.md`
-- **MongoDB Setup**: `backend/MONGODB_SETUP.md`
 
 ---
 

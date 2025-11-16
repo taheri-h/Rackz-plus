@@ -16,29 +16,25 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// Dynamic CORS configuration
+const getCorsOrigin = () => {
+  // If FRONTEND_URL is set, use it
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL;
+  }
+  
+  // In development, allow localhost
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:3000';
+  }
+  
+  // In production, allow same origin (for relative paths)
+  return true; // Allow same origin
+};
+
 // Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Get allowed origins from environment or use defaults
-    const allowedOrigins = process.env.FRONTEND_URL 
-      ? [process.env.FRONTEND_URL]
-      : ['http://localhost:3000', 'https://fynteq-com-357877.hostingersite.com', 'https://fynteq.com'];
-    
-    // Check if origin is allowed
-    if (allowedOrigins.some(allowed => origin.includes(allowed.replace(/^https?:\/\//, '').replace(/^www\./, '')))) {
-      callback(null, true);
-    } else {
-      // In production, allow any origin from the same domain
-      if (process.env.NODE_ENV === 'production') {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    }
-  },
+  origin: getCorsOrigin(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -73,7 +69,12 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  // Log error details in development, generic message in production
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
+  } else {
+    console.error('Internal server error');
+  }
   res.status(500).json({ error: 'Internal server error' });
 });
 
@@ -81,7 +82,11 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`📡 API available at http://localhost:${PORT}/api`);
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  } else {
+    console.log(`📡 API available at /api`);
+  }
 });
 

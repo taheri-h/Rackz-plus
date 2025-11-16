@@ -1,22 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-// Determine API URL based on environment
-const getApiUrl = () => {
-  // If environment variable is set, use it
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // In production (not localhost), use relative path
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return '/api';
-  }
-  
-  // In development (localhost), use local backend
-  return 'http://localhost:5001/api';
-};
-
-const API_URL = getApiUrl();
+import { API_URL } from '../utils/api';
 
 interface User {
   id: string;
@@ -80,7 +63,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               localStorage.removeItem('authUser');
             }
           } catch (error) {
-            console.error('Error verifying token:', error);
+            // Token verification failed, clear invalid token
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Error verifying token:', error);
+            }
             sessionStorage.removeItem('authToken');
             localStorage.removeItem('authUser');
           }
@@ -92,7 +78,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('Error loading user:', error);
+        // Error loading user, clear invalid data
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading user:', error);
+        }
         sessionStorage.removeItem('authToken');
         localStorage.removeItem('authUser');
       } finally {
@@ -140,7 +129,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('authUser', JSON.stringify(newUser));
       setUser(newUser);
     } catch (error: any) {
-      console.error('Signup error:', error);
+      // Log error in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Signup error:', error);
+      }
       throw error;
     }
   };
@@ -180,7 +172,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('authUser', JSON.stringify(userData));
       setUser(userData);
     } catch (error: any) {
-      console.error('Signin error:', error);
+      // Log error in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Signin error:', error);
+      }
       throw error;
     }
   };

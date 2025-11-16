@@ -1,10 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+
 interface User {
   id: string;
   email: string;
   name: string;
   company?: string;
+  entitlements?: {
+    saasPlan?: string | null;
+    setupEligible?: boolean;
+  };
 }
 
 interface AuthContextType {
@@ -14,6 +20,7 @@ interface AuthContextType {
   signup: (email: string, password: string, name: string, company?: string) => Promise<void>;
   signin: (email: string, password: string) => Promise<void>;
   signout: () => void;
+  getAuthToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,16 +41,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Load user and token from sessionStorage on mount
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
-        const storedUser = localStorage.getItem('authUser');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const token = sessionStorage.getItem('authToken');
+        if (token) {
+          // Verify token and get user data from API
+          try {
+            const response = await fetch(`${API_URL}/auth/me`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              setUser(data.user);
+            } else {
+              // Token invalid, clear it
+              sessionStorage.removeItem('authToken');
+              localStorage.removeItem('authUser');
+            }
+          } catch (error) {
+            console.error('Error verifying token:', error);
+            sessionStorage.removeItem('authToken');
+            localStorage.removeItem('authUser');
+          }
+        } else {
+          // Fallback to localStorage for backward compatibility
+          const storedUser = localStorage.getItem('authUser');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+          }
         }
       } catch (error) {
         console.error('Error loading user:', error);
+        sessionStorage.removeItem('authToken');
         localStorage.removeItem('authUser');
       } finally {
         setIsLoading(false);
@@ -55,22 +89,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signup = async (email: string, password: string, name: string, company?: string) => {
     try {
-      // In a real app, you would call your API here
-      // For now, we'll store the user locally
+      // Call backend API to create user
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Signup failed');
+      }
+
+      const data = await response.json();
+      
+      // Store JWT token in sessionStorage (NOT password!)
+      sessionStorage.setItem('authToken', data.token);
+      
+      // Store user data (without password)
       const newUser: User = {
-        id: `user_${Date.now()}`,
-        email,
-        name,
-        company
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        entitlements: data.user.entitlements,
+        company, // Store company separately if needed
       };
-
-      // Store user in localStorage
+      
       localStorage.setItem('authUser', JSON.stringify(newUser));
-      // Store credentials (in production, this should be handled by the backend)
-      localStorage.setItem('authCredentials', JSON.stringify({ email, password }));
-
       setUser(newUser);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
       throw error;
     }
@@ -78,23 +131,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signin = async (email: string, password: string) => {
     try {
-      // In a real app, you would call your API here
-      // For now, we'll check against stored credentials
-      const storedCredentials = localStorage.getItem('authCredentials');
-      
-      if (storedCredentials) {
-        const credentials = JSON.parse(storedCredentials);
-        if (credentials.email === email && credentials.password === password) {
-          const storedUser = localStorage.getItem('authUser');
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-            return;
-          }
-        }
+      // Call backend API to sign in
+      const response = await fetch(`${API_URL}/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Invalid email or password');
       }
 
-      throw new Error('Invalid email or password');
-    } catch (error) {
+      const data = await response.json();
+      
+      // Store JWT token in sessionStorage (NOT password!)
+      sessionStorage.setItem('authToken', data.token);
+      
+      // Store user data
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        entitlements: data.user.entitlements,
+      };
+      
+      localStorage.setItem('authUser', JSON.stringify(userData));
+      setUser(userData);
+    } catch (error: any) {
       console.error('Signin error:', error);
       throw error;
     }
@@ -102,8 +171,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signout = () => {
     setUser(null);
+    sessionStorage.removeItem('authToken');
     localStorage.removeItem('authUser');
+    // Remove old credentials if they exist
     localStorage.removeItem('authCredentials');
+  };
+
+  const getAuthToken = () => {
+    return sessionStorage.getItem('authToken');
   };
 
   const value: AuthContextType = {
@@ -112,7 +187,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     signup,
     signin,
-    signout
+    signout,
+    getAuthToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

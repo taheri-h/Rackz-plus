@@ -65,23 +65,23 @@ const Home: React.FC = () => {
         <meta name="keywords" content="stripe monitoring, payment monitoring, stripe failed payments, checkout monitoring, subscription monitoring, payment health, stripe connect, paypal monitoring" />
         <meta property="og:title" content={t('home.meta.title')} />
         <meta property="og:description" content={t('home.meta.description')} />
-        <meta property="og:url" content="https://fynteq.com" />
+        <meta property="og:url" content="https://getrackz.com" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={t('home.meta.title')} />
         <meta name="twitter:description" content={t('home.meta.description')} />
-        <link rel="canonical" href="https://fynteq.com" />
+        <link rel="canonical" href="https://getrackz.com" />
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": t('home.meta.title'),
             "description": t('home.meta.description'),
-            "url": "https://www.fynteq.com",
+            "url": "https://getrackz.com",
             "mainEntity": {
               "@type": "Organization",
-              "name": "Fynteq",
-              "url": "https://www.fynteq.com",
+              "name": "Rackz",
+              "url": "https://getrackz.com",
               "description": t('home.meta.description')
             }
           })}

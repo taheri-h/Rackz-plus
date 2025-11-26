@@ -17,7 +17,7 @@ const ChatWidget: React.FC = () => {
                 </svg>
               </div>
               <div>
-                <h4 className="font-semibold text-sm">Fynteq Support</h4>
+                <h4 className="font-semibold text-sm">Rackz Support</h4>
                 <div className="flex items-center space-x-1.5">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                   <p className="text-xs text-slate-300">Online now</p>

@@ -224,7 +224,7 @@ const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-white py-12 flex items-center justify-center">
         <Helmet>
-          <title>Admin Login | Fynteq</title>
+          <title>Admin Login | Rackz</title>
         </Helmet>
         <div className="max-w-md w-full px-6">
           <div className="card p-8">
@@ -265,7 +265,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Admin Dashboard | Fynteq</title>
+        <title>Admin Dashboard | Rackz</title>
         <meta name="description" content="Admin dashboard for managing setup requests" />
       </Helmet>
 

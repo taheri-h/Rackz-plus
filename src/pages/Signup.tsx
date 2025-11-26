@@ -234,13 +234,13 @@ const Signup: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>{`Sign Up - ${currentPackage.name}${!isSetupPackage ? ' Plan' : ''} | Fynteq`}</title>
+        <title>{`Sign Up - ${currentPackage.name}${!isSetupPackage ? ' Plan' : ''} | Rackz`}</title>
         <meta name="description" content={
           isSetupPackage 
             ? `Sign up for ${currentPackage.name}. ${'description' in currentPackage ? (currentPackage as { description: string }).description : ''}`
-            : `Sign up for Fynteq Pulse ${currentPackage.name} plan. Start monitoring your Stripe & PayPal payments with ${currentPackage.name} features.`
+            : `Sign up for Rackz Pulse ${currentPackage.name} plan. Start monitoring your Stripe & PayPal payments with ${currentPackage.name} features.`
         } />
-        <link rel="canonical" href={`https://fynteq.com/signup${isSetupPackage ? `?redirect=${redirectPath}` : `?package=${finalPackageName}&billing=${billing}`}`} />
+        <link rel="canonical" href={`https://getrackz.com/signup${isSetupPackage ? `?redirect=${redirectPath}` : `?package=${finalPackageName}&billing=${billing}`}`} />
       </Helmet>
       <div className="max-w-4xl mx-auto px-6">
         <div className="text-center mb-8">

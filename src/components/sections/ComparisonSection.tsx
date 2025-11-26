@@ -21,7 +21,7 @@ const ComparisonSection: React.FC = () => {
             <thead>
               <tr className="bg-slate-50">
                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">{t('comparison.table.feature')}</th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Fynteq</th>
+                <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">Rackz</th>
                 <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">{t('comparison.table.freelancers')}</th>
                 <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">{t('comparison.table.agencies')}</th>
                 <th className="px-6 py-4 text-center text-sm font-semibold text-slate-900">DIY</th>
@@ -32,7 +32,7 @@ const ComparisonSection: React.FC = () => {
                 <td className="px-6 py-4 text-sm text-slate-900 font-medium">{t('comparison.table.price')}</td>
                 <td className="px-6 py-4 text-center">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {t('comparison.table.fynteqPrice')}
+                    {t('comparison.table.rackzPrice')}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-center text-sm text-slate-600">{t('comparison.table.freelancerPrice')}</td>

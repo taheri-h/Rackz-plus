@@ -1,6 +1,6 @@
-# Fynteq Backend API
+# Rackz Backend API
 
-Backend API for Fynteq SaaS application using Node.js, Express, and MongoDB.
+Backend API for Rackz SaaS application using Node.js, Express, and MongoDB.
 
 ## 🚀 Quick Start
 
@@ -14,7 +14,7 @@ npm install
 Create/update `.env` file:
 ```env
 MONGODB_URI="mongodb://username:password@host:port/database?authSource=admin"
-MONGODB_DB="fynteq_saas"
+MONGODB_DB="rackz_saas"
 PORT=5001
 NODE_ENV=development
 JWT_SECRET="your-strong-secret-key"

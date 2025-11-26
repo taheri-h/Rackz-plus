@@ -41,7 +41,7 @@ const CaseStudyDetail: React.FC = () => {
   // Add additional fields to case studies
   const allCaseStudies = caseStudiesData.map((study, index) => ({
     ...study,
-    testimonial: "Fynteq transformed our business with professional payment integration services.",
+    testimonial: "Rackz transformed our business with professional payment integration services.",
     results: {
       ...study.results,
       revenue: "$8,500/month",
@@ -74,10 +74,10 @@ const CaseStudyDetail: React.FC = () => {
         <title>{caseStudy.title} - {t('caseStudies.meta.caseStudyTitle')}</title>
         <meta name="description" content={`${(caseStudy as any).description || caseStudy.challenge} See how ${caseStudy.company} achieved ${caseStudy.results.growth} growth with our payment integration services.`} />
         <meta name="keywords" content={`${caseStudy.industry} case study, payment integration success, ${caseStudy.company}, subscription billing, payment processing results`} />
-        <link rel="canonical" href={`https://www.fynteq.com/case-studies/${slug}`} />
+        <link rel="canonical" href={`https://getrackz.com/case-studies/${slug}`} />
         <meta property="og:title" content={caseStudy.title} />
         <meta property="og:description" content={caseStudy.testimonial} />
-        <meta property="og:url" content={`https://www.fynteq.com/case-studies/${slug}`} />
+        <meta property="og:url" content={`https://getrackz.com/case-studies/${slug}`} />
         <meta property="og:type" content="article" />
         <script type="application/ld+json">
           {JSON.stringify({
@@ -85,19 +85,19 @@ const CaseStudyDetail: React.FC = () => {
             "@type": "CaseStudy",
             "name": caseStudy.title,
             "description": caseStudy.testimonial,
-            "url": `https://www.fynteq.com/case-studies/${slug}`,
+            "url": `https://getrackz.com/case-studies/${slug}`,
             "about": {
               "@type": "Organization",
               "name": caseStudy.company
             },
             "author": {
               "@type": "Organization",
-              "name": "Fynteq"
+              "name": "Rackz"
             },
             "publisher": {
               "@type": "Organization",
-              "name": "Fynteq",
-              "url": "https://www.fynteq.com"
+              "name": "Rackz",
+              "url": "https://getrackz.com"
             },
             "industry": caseStudy.industry,
             "result": {
@@ -170,7 +170,7 @@ const CaseStudyDetail: React.FC = () => {
           <h2>The Challenge</h2>
           <p>{caseStudy.challenge}</p>
           
-          <p>When {caseStudy.client} first approached Fynteq, they were facing significant challenges in their payment processing. As a growing business in the {caseStudy.industry.toLowerCase()} industry, they needed a solution that could scale with their growth while maintaining security and compliance.</p>
+          <p>When {caseStudy.client} first approached Rackz, they were facing significant challenges in their payment processing. As a growing business in the {caseStudy.industry.toLowerCase()} industry, they needed a solution that could scale with their growth while maintaining security and compliance.</p>
 
           <h2>Our Solution</h2>
           <p>{caseStudy.solution}</p>
@@ -217,7 +217,7 @@ const CaseStudyDetail: React.FC = () => {
           <h2>Conclusion</h2>
           <p>The success of {caseStudy.company} demonstrates how the right payment integration can transform a business. By focusing on security, user experience, and scalability, we were able to help them achieve remarkable growth.</p>
 
-          <p>Ready to transform your payment processing? Contact our team at Fynteq to discuss how we can help your business achieve similar results.</p>
+          <p>Ready to transform your payment processing? Contact our team at Rackz to discuss how we can help your business achieve similar results.</p>
         </div>
 
         {/* Client Testimonial */}

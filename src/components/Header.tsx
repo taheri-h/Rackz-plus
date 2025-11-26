@@ -179,7 +179,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center" onClick={handleLogoClick}>
-              <img src="/fynteq-logo.png" alt="Fynteq Logo" className="h-8 w-auto cursor-pointer" />
+              <img src="/rackz-logo.png" alt="Rackz Logo" className="h-8 w-auto cursor-pointer" />
             </Link>
           </div>
           <div className="hidden lg:flex items-center space-x-8">

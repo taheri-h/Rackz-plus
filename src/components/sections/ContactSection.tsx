@@ -19,7 +19,7 @@ const ContactSection: React.FC = () => {
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/info@fynteq.com', {
+      const response = await fetch('https://formsubmit.co/ajax/info@rackz.com', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const ContactSection: React.FC = () => {
               <div className="space-y-6">
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-1">{t('contact.info.email')}</h4>
-                  <p className="text-slate-600">info@fynteq.com</p>
+                  <p className="text-slate-600">info@rackz.com</p>
                 </div>
 
                 <div>

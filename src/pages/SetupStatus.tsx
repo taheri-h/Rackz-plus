@@ -46,7 +46,7 @@ const SetupStatus: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Setup Status - {currentPackage.name} | Fynteq</title>
+        <title>Setup Status - {currentPackage.name} | Rackz</title>
         <meta name="description" content={`Track the status of your ${currentPackage.name} setup request.`} />
       </Helmet>
 
@@ -214,7 +214,7 @@ const SetupStatus: React.FC = () => {
         <div className="mt-8 text-center">
           <p className="text-sm text-slate-600 mb-2">Need help or have questions?</p>
           <a
-            href="mailto:support@fynteq.com"
+            href="mailto:support@rackz.com"
             className="text-sm font-medium text-slate-900 hover:underline"
           >
             Contact Support

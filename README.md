@@ -1,4 +1,4 @@
-# Fynteq - SaaS Payment Monitoring Platform
+# Rackz - SaaS Payment Monitoring Platform
 
 ## 🚀 Quick Start
 

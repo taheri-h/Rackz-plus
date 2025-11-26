@@ -52,9 +52,9 @@ const Signin: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Sign In | Fynteq Pulse</title>
-        <meta name="description" content="Sign in to your Fynteq Pulse account to monitor your Stripe & PayPal payments." />
-        <link rel="canonical" href="https://fynteq.com/signin" />
+        <title>Sign In | Rackz Pulse</title>
+        <meta name="description" content="Sign in to your Rackz Pulse account to monitor your Stripe & PayPal payments." />
+        <link rel="canonical" href="https://getrackz.com/signin" />
       </Helmet>
       <div className="max-w-md mx-auto px-6">
         <div className="text-center mb-8">

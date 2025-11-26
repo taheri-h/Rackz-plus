@@ -128,9 +128,9 @@ const Payment: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Complete Payment - {currentPackage.name} Plan | Fynteq Pulse</title>
-        <meta name="description" content={`Complete your payment for Fynteq Pulse ${currentPackage.name} plan. Secure checkout with Stripe.`} />
-        <link rel="canonical" href={`https://fynteq.com/payment?package=${packageName}&billing=${billing}`} />
+        <title>Complete Payment - {currentPackage.name} Plan | Rackz Pulse</title>
+        <meta name="description" content={`Complete your payment for Rackz Pulse ${currentPackage.name} plan. Secure checkout with Stripe.`} />
+        <link rel="canonical" href={`https://getrackz.com/payment?package=${packageName}&billing=${billing}`} />
       </Helmet>
       <div className="max-w-md mx-auto px-6">
         <div className="text-center mb-8">

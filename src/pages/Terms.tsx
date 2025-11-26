@@ -38,7 +38,7 @@ const Terms: React.FC = () => {
             {t('terms.contactInformationDescription')}
           </p>
           <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
-            <p className="text-slate-600"><strong>{t('terms.email')}:</strong> info@fynteq.com</p>
+            <p className="text-slate-600"><strong>{t('terms.email')}:</strong> info@rackz.com</p>
           </div>
         </div>
       </div>

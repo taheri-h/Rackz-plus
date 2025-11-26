@@ -30,7 +30,7 @@ const Blog: React.FC = () => {
   // Add images and author to blog posts
   const blogPostsWithImages = blogPosts.map((post, index) => ({
     ...post,
-    author: "Fynteq Team",
+    author: "Rackz Team",
     image: [
       "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
@@ -94,31 +94,31 @@ const Blog: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Payment Integration Blog - Expert Insights & Best Practices | Fynteq</title>
+        <title>Payment Integration Blog - Expert Insights & Best Practices | Rackz</title>
         <meta name="description" content="Expert insights on payment integration, Stripe setup, PayPal integration, and fintech best practices. Learn from our experience across hundreds of merchant integrations." />
         <meta name="keywords" content="payment integration blog, Stripe integration guide, PayPal setup tutorial, payment processing best practices, fintech insights, payment gateway optimization" />
-        <link rel="canonical" href="https://www.fynteq.com/blog" />
+        <link rel="canonical" href="https://getrackz.com/blog" />
         <meta property="og:title" content="Payment Integration Blog - Expert Insights & Best Practices" />
         <meta property="og:description" content="Expert insights on payment integration, Stripe setup, PayPal integration, and fintech best practices." />
-        <meta property="og:url" content="https://www.fynteq.com/blog" />
+        <meta property="og:url" content="https://getrackz.com/blog" />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Blog",
-            "name": "Fynteq Payment Integration Blog",
+            "name": "Rackz Payment Integration Blog",
             "description": "Expert insights on payment integration, Stripe setup, PayPal integration, and fintech best practices",
-            "url": "https://www.fynteq.com/blog",
+            "url": "https://getrackz.com/blog",
             "publisher": {
               "@type": "Organization",
-              "name": "Fynteq",
-              "url": "https://www.fynteq.com"
+              "name": "Rackz",
+              "url": "https://getrackz.com"
             },
             "blogPost": blogPostsWithImages.map(post => ({
               "@type": "BlogPosting",
               "headline": post.title,
               "description": post.excerpt,
-              "url": `https://www.fynteq.com/blog/${post.slug}`,
+              "url": `https://getrackz.com/blog/${post.slug}`,
               "datePublished": post.date,
               "author": {
                 "@type": "Organization",

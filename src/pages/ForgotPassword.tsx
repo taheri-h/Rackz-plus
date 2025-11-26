@@ -46,9 +46,9 @@ const ForgotPassword: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Forgot Password | Fynteq Pulse</title>
-        <meta name="description" content="Reset your Fynteq Pulse account password." />
-        <link rel="canonical" href="https://fynteq.com/forgot-password" />
+        <title>Forgot Password | Rackz Pulse</title>
+        <meta name="description" content="Reset your Rackz Pulse account password." />
+        <link rel="canonical" href="https://getrackz.com/forgot-password" />
       </Helmet>
       <div className="max-w-md mx-auto px-6">
         <div className="text-center mb-8">

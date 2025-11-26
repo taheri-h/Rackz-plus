@@ -149,7 +149,7 @@ const SetupForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>{currentPackage.name} - Setup Form | Fynteq</title>
+        <title>{currentPackage.name} - Setup Form | Rackz</title>
         <meta name="description" content={`Complete the setup form for ${currentPackage.name}. ${currentPackage.description}`} />
       </Helmet>
 

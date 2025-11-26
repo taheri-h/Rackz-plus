@@ -159,9 +159,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>{planName} Dashboard | Fynteq Pulse</title>
-        <meta name="description" content={`Monitor your Stripe & PayPal payments with Fynteq Pulse ${planName} dashboard. Track payment health, alerts, and analytics.`} />
-        <link rel="canonical" href="https://fynteq.com/dashboard" />
+        <title>{planName} Dashboard | Rackz Pulse</title>
+        <meta name="description" content={`Monitor your Stripe & PayPal payments with Rackz Pulse ${planName} dashboard. Track payment health, alerts, and analytics.`} />
+        <link rel="canonical" href="https://getrackz.com/dashboard" />
       </Helmet>
       {/* Header */}
       <div className="bg-white border-b border-slate-100">

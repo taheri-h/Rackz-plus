@@ -171,7 +171,7 @@ const SetupDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Setup Dashboard | Fynteq</title>
+        <title>Setup Dashboard | Rackz</title>
         <meta name="description" content="Track all your payment integration setup requests and their progress." />
       </Helmet>
 

@@ -52,7 +52,7 @@ const CaseStudies: React.FC = () => {
   // Add additional fields to case studies
   const caseStudies = caseStudiesData.map((study, index) => ({
     ...study,
-    testimonial: "Fynteq transformed our business with professional payment integration services.",
+    testimonial: "Rackz transformed our business with professional payment integration services.",
     results: {
       ...study.results,
       revenue: "$8,500/month",
@@ -93,10 +93,10 @@ const CaseStudies: React.FC = () => {
         <title>{t('caseStudies.meta.title')}</title>
         <meta name="description" content={t('caseStudies.meta.description')} />
         <meta name="keywords" content={t('caseStudies.meta.keywords')} />
-        <link rel="canonical" href="https://www.fynteq.com/case-studies" />
+        <link rel="canonical" href="https://getrackz.com/case-studies" />
         <meta property="og:title" content={t('caseStudies.meta.title')} />
         <meta property="og:description" content={t('caseStudies.meta.description')} />
-        <meta property="og:url" content="https://www.fynteq.com/case-studies" />
+        <meta property="og:url" content="https://getrackz.com/case-studies" />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">
           {JSON.stringify({
@@ -104,7 +104,7 @@ const CaseStudies: React.FC = () => {
             "@type": "CollectionPage",
             "name": t('caseStudies.meta.title'),
             "description": t('caseStudies.meta.description'),
-            "url": "https://www.fynteq.com/case-studies",
+            "url": "https://getrackz.com/case-studies",
             "mainEntity": {
               "@type": "ItemList",
               "itemListElement": caseStudies.map((study, index) => ({
@@ -115,7 +115,7 @@ const CaseStudies: React.FC = () => {
                   "name": study.title,
                   "description": study.description,
                   "about": study.industry,
-                  "url": `https://www.fynteq.com/case-studies/${study.slug}`
+                  "url": `https://getrackz.com/case-studies/${study.slug}`
                 }
               }))
             }

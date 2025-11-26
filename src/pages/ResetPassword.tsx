@@ -131,7 +131,7 @@ const ResetPassword: React.FC = () => {
     return (
       <div className="min-h-screen bg-white py-12">
         <Helmet>
-          <title>Invalid Reset Link | Fynteq Pulse</title>
+          <title>Invalid Reset Link | Rackz Pulse</title>
         </Helmet>
         <div className="max-w-md mx-auto px-6">
           <div className="card p-8 text-center">
@@ -158,7 +158,7 @@ const ResetPassword: React.FC = () => {
     return (
       <div className="min-h-screen bg-white py-12">
         <Helmet>
-          <title>Password Reset Success | Fynteq Pulse</title>
+          <title>Password Reset Success | Rackz Pulse</title>
         </Helmet>
         <div className="max-w-md mx-auto px-6">
           <div className="card p-8 text-center">
@@ -186,9 +186,9 @@ const ResetPassword: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Reset Password | Fynteq Pulse</title>
-        <meta name="description" content="Reset your Fynteq Pulse account password." />
-        <link rel="canonical" href="https://fynteq.com/reset-password" />
+        <title>Reset Password | Rackz Pulse</title>
+        <meta name="description" content="Reset your Rackz Pulse account password." />
+        <link rel="canonical" href="https://getrackz.com/reset-password" />
       </Helmet>
       <div className="max-w-md mx-auto px-6">
         <div className="text-center mb-8">

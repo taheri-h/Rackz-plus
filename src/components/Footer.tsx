@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch('https://formsubmit.co/ajax/info@fynteq.com', {
+      const response = await fetch('https://formsubmit.co/ajax/info@rackz.com', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-6">
-              <img src="/fav.png" alt="Fynteq Logo" className="h-12 w-auto" />
+              <img src="/fav.png" alt="Rackz Logo" className="h-12 w-auto" />
             </div>
             <p className="text-slate-300 mb-6 max-w-md leading-relaxed">
               {t('footer.description')}
@@ -73,7 +73,7 @@ const Footer: React.FC = () => {
                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-slate-400 text-sm">info@fynteq.com</span>
+                <span className="text-slate-400 text-sm">info@rackz.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <a 
-                  href="https://www.linkedin.com/company/fynteq" 
+                  href="https://www.linkedin.com/company/rackz" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center space-x-3 hover:text-white transition-colors"

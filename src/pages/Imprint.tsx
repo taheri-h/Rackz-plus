@@ -40,8 +40,8 @@ const Imprint: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-slate-900 mb-2">{t('imprint.contactInformation')}</h3>
                 <div className="space-y-2 text-slate-600">
-                  <p>{t('imprint.email')}: info@fynteq.com</p>
-                  <p>{t('imprint.website')}: https://www.fynteq.com</p>
+                  <p>{t('imprint.email')}: info@rackz.com</p>
+                  <p>{t('imprint.website')}: https://getrackz.com</p>
                 </div>
               </div>
               
@@ -92,7 +92,7 @@ const Imprint: React.FC = () => {
             <h2 className="text-2xl font-semibold text-slate-900 mb-6">{t('imprint.contactForLegalMatters')}</h2>
             <div className="space-y-2 text-slate-600">
               <p>{t('imprint.legalContactText')}</p>
-              <p className="font-semibold">{t('imprint.email')}: info@fynteq.com</p>
+              <p className="font-semibold">{t('imprint.email')}: info@rackz.com</p>
               <p>{t('imprint.legalResponseTime')}</p>
             </div>
           </div>

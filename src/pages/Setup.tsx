@@ -42,20 +42,20 @@ const Setup: React.FC = () => {
     },
     {
       question: 'Can you fix existing issues?',
-      answer: 'Yes. Fynteq Pulse detects errors, and our team can resolve them.'
+      answer: 'Yes. Rackz Pulse detects errors, and our team can resolve them.'
     }
   ];
 
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Done-for-you Stripe & PayPal Setup | Fynteq</title>
+        <title>Done-for-you Stripe & PayPal Setup | Rackz</title>
         <meta name="description" content="Professional setup for checkouts, subscriptions, CRM integrations, and marketplaces. Fast, fixed-price, and fully compliant. Go live in days, not weeks." />
         <meta name="keywords" content="stripe setup, stripe integration service, paypal integration, stripe billing setup, stripe checkout setup, stripe developer europe, stripe consultant, payment setup service, stripe connect setup, salesforce stripe integration" />
-        <link rel="canonical" href="https://fynteq.com/setup" />
-        <meta property="og:title" content="Done-for-you Stripe & PayPal Setup | Fynteq" />
+        <link rel="canonical" href="https://getrackz.com/setup" />
+        <meta property="og:title" content="Done-for-you Stripe & PayPal Setup | Rackz" />
         <meta property="og:description" content="Professional setup for checkouts, subscriptions, CRM integrations, and marketplaces. Fast, fixed-price, and fully compliant." />
-        <meta property="og:url" content="https://fynteq.com/setup" />
+        <meta property="og:url" content="https://getrackz.com/setup" />
         <meta property="og:type" content="website" />
       </Helmet>
 
@@ -99,10 +99,10 @@ const Setup: React.FC = () => {
         </div>
       </section>
 
-      {/* Why Fynteq Setup */}
+      {/* Why Rackz Setup */}
       <section className="py-16 bg-slate-50">
         <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-8 text-center">Why Fynteq Setup?</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-8 text-center">Why Rackz Setup?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-slate-900 mb-2">Fast delivery</div>

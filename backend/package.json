@@ -1,7 +1,7 @@
 {
-  "name": "fynteq-backend",
+  "name": "rackz-backend",
   "version": "1.0.0",
-  "description": "Fynteq SaaS Backend API",
+  "description": "Rackz SaaS Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

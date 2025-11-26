@@ -52,7 +52,7 @@ app.use((req, res, next) => {
 
 // Health check route
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Fynteq API is running' });
+  res.json({ status: 'OK', message: 'Rackz API is running' });
 });
 
 // API Routes

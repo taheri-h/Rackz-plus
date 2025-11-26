@@ -136,7 +136,7 @@ const SetupPayment: React.FC = () => {
   return (
     <div className="min-h-screen bg-white py-12">
       <Helmet>
-        <title>Complete Payment - {currentPackage.name} | Fynteq</title>
+        <title>Complete Payment - {currentPackage.name} | Rackz</title>
         <meta name="description" content={`Complete your payment for ${currentPackage.name}. Secure checkout with Stripe.`} />
       </Helmet>
 

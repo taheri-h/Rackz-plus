@@ -13,7 +13,7 @@
   },
   "home": {
     "meta": {
-      "title": "Fynteq - Expert Payment Integration Services | Stripe & PayPal Setup in 3-7 Days",
+      "title": "Rackz - Expert Payment Integration Services | Stripe & PayPal Setup in 3-7 Days",
       "description": "Professional payment integration for SaaS, e-commerce & startups. Expert Stripe & PayPal setup in 3-7 days. Subscription billing, marketplace payments, PCI-aware implementation. Experience across hundreds of merchant integrations."
     },
     "blog": {
@@ -69,7 +69,7 @@
         "You find out too late"
       ]
     },
-    "conclusion": "Fynteq Pulse monitors all of this for you, automatically."
+    "conclusion": "Rackz Pulse monitors all of this for you, automatically."
   },
   "process": {
     "title": "How It Works",
@@ -123,7 +123,7 @@
   },
   "hero": {
     "title": "Stop losing revenue to silent payment failures.",
-    "subtitle": "Fynteq Pulse monitors your Stripe & PayPal checkouts, subscriptions, renewals, and payouts 24/7 and alerts you before customers complain.",
+    "subtitle": "Rackz Pulse monitors your Stripe & PayPal checkouts, subscriptions, renewals, and payouts 24/7 and alerts you before customers complain.",
     "subtitle2": "Instant alerts. Clear fixes. Start accepting payments reliably in days, not weeks.",
     "startFreeTrial": "Start now",
     "bookCall": "Book a Call",
@@ -339,7 +339,7 @@
       "fitness": {
         "coachType": "FITNESS COACH",
         "title": "Online Fitness Coaching Platform",
-        "testimonial": "\"As a fitness coach, I needed to sell online programs and subscriptions. Fynteq set up Stripe integration with recurring billing for my monthly coaching plans. Now I'm making $8,500/month in recurring revenue with automated payments.\"",
+        "testimonial": "\"As a fitness coach, I needed to sell online programs and subscriptions. Rackz set up Stripe integration with recurring billing for my monthly coaching plans. Now I'm making $8,500/month in recurring revenue with automated payments.\"",
         "metrics": {
           "monthlyRevenue": "Monthly Revenue",
           "successRate": "Success Rate",
@@ -353,7 +353,7 @@
       "ecommerce": {
         "businessType": "E-COMMERCE",
         "title": "Multi-Currency Online Store",
-        "testimonial": "\"Our e-commerce store needed to accept payments from customers worldwide. Fynteq integrated both Stripe and PayPal with multi-currency support. We've increased international sales by 340% and reduced cart abandonment by 45%.\"",
+        "testimonial": "\"Our e-commerce store needed to accept payments from customers worldwide. Rackz integrated both Stripe and PayPal with multi-currency support. We've increased international sales by 340% and reduced cart abandonment by 45%.\"",
         "metrics": {
           "growth": "Growth",
           "lessAbandonment": "Less Abandonment",
@@ -367,7 +367,7 @@
       "saas": {
         "businessType": "SAAS CONSULTANT",
         "title": "SaaS Subscription Platform",
-        "testimonial": "\"As a business consultant, I launched a SaaS platform but struggled with complex subscription billing. Fynteq built a complete recurring payment system with proration, coupons, and dunning management. Monthly revenue grew from $2K to $28K in 6 months.\"",
+        "testimonial": "\"As a business consultant, I launched a SaaS platform but struggled with complex subscription billing. Rackz built a complete recurring payment system with proration, coupons, and dunning management. Monthly revenue grew from $2K to $28K in 6 months.\"",
         "metrics": {
           "monthlyRevenue": "Monthly Revenue",
           "growth": "Growth",
@@ -646,7 +646,7 @@
     "questions": [
       {
         "question": "Do you see card data?",
-        "answer": "No. Stripe and PayPal never expose full card numbers. Fynteq Pulse uses secure, read-only access and only sees metadata & payment statuses."
+        "answer": "No. Stripe and PayPal never expose full card numbers. Rackz Pulse uses secure, read-only access and only sees metadata & payment statuses."
       },
       {
         "question": "Will Pulse break my current checkout?",
@@ -759,7 +759,7 @@
       "success": "Message sent successfully!",
       "thankYou": "Thank you for reaching out to us.",
       "responseTime": "We will respond within 2 hours during business hours.",
-      "error": "There was an error submitting your form. Please email us directly at info@fynteq.com"
+      "error": "There was an error submitting your form. Please email us directly at info@rackz.com"
     }
   },
   "cookies": {
@@ -787,10 +787,10 @@
     "refundPolicy": "Refund Policy",
     "security": "Security",
     "imprint": "Imprint",
-    "copyright": "© 2024 Fynteq. All rights reserved."
+    "copyright": "© 2024 Rackz. All rights reserved."
   },
   "chatWidget": {
-    "title": "Fynteq Support",
+    "title": "Rackz Support",
     "onlineNow": "Online now",
     "welcomeMessage": "Hi! I'm here to help with your payment integration questions. How can I assist you today?",
     "getQuote": {
@@ -998,14 +998,14 @@
     ]
   },
   "comparison": {
-    "title": "Why choose Fynteq over other options?",
+    "title": "Why choose Rackz over other options?",
     "subtitle": "See how we compare to freelancers, agencies, and DIY solutions.",
     "table": {
       "feature": "Feature",
       "freelancers": "Freelancers",
       "agencies": "Agencies",
       "price": "Price",
-      "fynteqPrice": "$299-1,999",
+      "rackzPrice": "$299-1,999",
       "freelancerPrice": "$2,000-5,000",
       "agencyPrice": "$5,000-15,000",
       "freeTimeCost": "Free (time cost)",
@@ -1028,7 +1028,7 @@
       "limited": "Limited"
     },
     "whyWins": {
-      "title": "Why Fynteq Wins",
+      "title": "Why Rackz Wins",
       "bestValue": {
         "title": "Best Value",
         "description": "Professional quality at a fraction of agency costs"
@@ -1126,11 +1126,11 @@
     "acceptanceOfTerms": "1. Acceptance of Terms",
     "acceptanceOfTermsDescription": "By accessing and using our services, you accept and agree to be bound by the terms and provision of this agreement.",
     "serviceDescription": "2. Service Description",
-    "serviceDescriptionDescription": "Fynteq provides payment integration services including but not limited to Stripe, PayPal, and other payment gateway integrations.",
+    "serviceDescriptionDescription": "Rackz provides payment integration services including but not limited to Stripe, PayPal, and other payment gateway integrations.",
     "paymentTerms": "3. Payment Terms",
     "paymentTermsDescription": "All payments are due upon completion of services. We offer fixed-price packages with guaranteed delivery timelines.",
     "limitationOfLiability": "4. Limitation of Liability",
-    "limitationOfLiabilityDescription": "In no event shall Fynteq be liable for any indirect, incidental, special, consequential, or punitive damages.",
+    "limitationOfLiabilityDescription": "In no event shall Rackz be liable for any indirect, incidental, special, consequential, or punitive damages.",
     "contactInformation": "5. Contact Information",
     "contactInformationDescription": "For questions about these Terms of Service, please contact us at:",
     "email": "Email"
@@ -1172,13 +1172,13 @@
     "subtitle": "Legal information and company details",
     "companyInformation": "Company Information",
     "companyName": "Company Name",
-    "companyNameValue": "Fynteq (Part of Way Technologies Corp.)",
+    "companyNameValue": "Rackz (Part of Way Technologies Corp.)",
     "parentCompany": "Parent Company",
     "parentCompanyValue": "Way Technologies Corp.",
     "businessType": "Business Type",
     "businessTypeValue": "Payment Integration Services & Fintech Consulting",
     "companyDescription": "Company Description",
-    "companyDescriptionValue": "Fynteq is a fintech technology brand under Way Technologies Corp., specializing in embedded payment solutions, custom software development, and expert fintech consulting. We empower small and medium-sized businesses with seamless payment integration, secure payment gateways, and scalable fintech infrastructure to drive growth and digital transformation.",
+    "companyDescriptionValue": "Rackz is a fintech technology brand under Way Technologies Corp., specializing in embedded payment solutions, custom software development, and expert fintech consulting. We empower small and medium-sized businesses with seamless payment integration, secure payment gateways, and scalable fintech infrastructure to drive growth and digital transformation.",
     "contactInformation": "Contact Information",
     "email": "Email",
     "website": "Website",

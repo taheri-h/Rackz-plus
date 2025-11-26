@@ -80,7 +80,7 @@ const BlogPost: React.FC = () => {
         <h2>Conclusion</h2>
         <p>Stripe integration can seem complex at first, but with the right approach and following best practices, you can create a secure and user-friendly payment experience for your customers.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-15",
       readTime: "8 min read",
       category: "Payment Integration",
@@ -135,7 +135,7 @@ const BlogPost: React.FC = () => {
         <h2>Conclusion</h2>
         <p>Subscription billing is complex but crucial for SaaS success. By following these best practices and working with experienced payment integration specialists, you can build a billing system that scales with your business.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-20",
       readTime: "10 min read",
       category: "SaaS Billing",
@@ -435,7 +435,7 @@ const coupon = await stripe.coupons.create({
         <p>Setting up recurring billing with Stripe requires careful planning and implementation. Focus on creating a smooth customer experience, implementing robust error handling, and optimizing for revenue growth. Remember to test thoroughly and monitor your metrics closely.</p>
         <p>For complex implementations, consider working with payment integration specialists who can help you avoid common pitfalls and optimize your subscription billing strategy.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-10",
       readTime: "10 min read",
       category: "SaaS Billing",
@@ -584,7 +584,7 @@ const coupon = await stripe.coupons.create({
         <p>The best payment gateway depends on your specific needs. Stripe excels for developers and subscription businesses, PayPal offers broad acceptance and buyer protection, while Square provides integrated solutions for unified commerce.</p>
         <p>Consider your technical resources, business model, and growth plans when making your decision. Many businesses successfully use multiple payment gateways to optimize for different customer segments and use cases.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-15",
       readTime: "12 min read",
       category: "Payment Integration",
@@ -652,7 +652,7 @@ const coupon = await stripe.coupons.create({
         <h2>Conclusion</h2>
         <p>PCI compliance is not optional for businesses that handle credit card data. By following this checklist and working with experienced professionals, you can ensure your business meets all security requirements.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-25",
       readTime: "12 min read",
       category: "Security",
@@ -839,7 +839,7 @@ const subscription = await stripe.subscriptions.create({
         <p>Stripe's API is powerful and flexible, but proper implementation requires careful attention to security, error handling, and user experience. By following this guide and Stripe's documentation, you can build robust payment processing into your applications.</p>
         <p>Remember to always test thoroughly in Stripe's test mode before going live, and consider working with experienced payment integration specialists for complex implementations.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-20",
       readTime: "9 min read",
       category: "Payment Integration",
@@ -1182,7 +1182,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
         <p>Choosing the right SaaS billing model is crucial for your company's success. Start with a simple model that aligns with your value proposition, then evolve as you learn more about your customers and market. Remember that pricing is not set in stone - it should evolve with your business and market conditions.</p>
         <p>The key is to understand your customers' needs, measure the impact of your pricing decisions, and continuously optimize for both customer satisfaction and revenue growth. With the right billing model and implementation, you can build a sustainable, profitable SaaS business.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-18",
       readTime: "8 min read",
       category: "SaaS Billing",
@@ -1602,7 +1602,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
         <p>Remember to prioritize user experience, security, and scalability when making your decision. The right payment solution should grow with your business and help you maximize conversion rates while minimizing costs and complexity.</p>
         <p>For businesses looking to optimize their payment processing, consider working with payment integration specialists who can help you implement the best solution for your specific needs and ensure a smooth, secure checkout experience for your customers.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-05",
       readTime: "11 min read",
       category: "Payment Gateways",
@@ -1981,7 +1981,7 @@ Monthly Cost = ($10,000 × 0.029) + ($100 × $0.30) = $290 + $30 = $320</code></
         <p>For high-volume businesses, negotiating custom rates can result in significant savings. Always consider the total cost of ownership, including setup fees, monthly fees, and any additional services you might need.</p>
         <p>Remember that the cheapest processor isn't always the best choice. Consider your business requirements, growth plans, and the value of additional features when making your decision. The right payment processor should help you grow your business while keeping costs manageable.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-15",
       readTime: "9 min read",
       category: "Payment Gateways",
@@ -2412,7 +2412,7 @@ function securityHeaders(req, res, next) {
         <p>Remember that compliance is an ongoing process, not a one-time event. Regular assessments, updates, and monitoring are essential to maintain security and compliance in the ever-evolving threat landscape.</p>
         <p>For businesses seeking expert guidance on payment security implementation, consider working with qualified payment security specialists who can help you navigate the complexities of PCI DSS compliance and implement robust security measures tailored to your specific needs.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2024-01-01",
       readTime: "9 min read",
       category: "Security",
@@ -2806,7 +2806,7 @@ const fraudRules = {
         <p>Remember that fraud prevention is not a one-time implementation but an ongoing process that requires constant monitoring, adjustment, and improvement. Stay informed about the latest fraud trends and technologies, and regularly update your fraud prevention measures to stay ahead of evolving threats.</p>
         <p>For businesses seeking expert guidance on fraud prevention implementation, consider working with qualified payment security specialists who can help you design and implement a comprehensive fraud prevention strategy tailored to your specific business needs and risk profile.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-12",
       readTime: "10 min read",
       category: "Security",
@@ -3271,7 +3271,7 @@ const trackCartAbandonment = (step, reason) => {
         <p>Start with the basics - simplify your checkout process, optimize for mobile, build trust, and be transparent about costs. Then gradually implement more advanced strategies like personalized recovery campaigns and sophisticated testing programs.</p>
         <p>For businesses seeking expert guidance on checkout optimization, consider working with payment and UX specialists who can help you design and implement a conversion-focused checkout experience tailored to your specific business needs and customer base.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-28",
       readTime: "8 min read",
       category: "UX Design",
@@ -3756,7 +3756,7 @@ const handleTouchEvents = () => {
         <p>Remember that mobile payment design is an ongoing process. Continuously test, measure, and optimize based on user feedback and analytics data. Stay updated with emerging technologies and evolving user expectations to maintain a competitive edge in the mobile commerce landscape.</p>
         <p>For businesses seeking to optimize their mobile payment experience, consider working with mobile UX specialists and payment integration experts who can help design and implement mobile-first payment solutions tailored to your specific business needs and target audience.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-10",
       readTime: "7 min read",
       category: "UX Design",
@@ -4300,7 +4300,7 @@ const detectInternationalFraud = async (transaction) => {
         <p>As global commerce continues to grow, businesses that invest in comprehensive international payment solutions will be better positioned to capture market opportunities and serve customers worldwide. Remember that international payment processing is an ongoing process that requires continuous monitoring, optimization, and adaptation to changing market conditions.</p>
         <p>For businesses seeking to expand internationally, consider working with payment integration specialists who understand the complexities of global payment processing and can help you implement solutions tailored to your target markets and business requirements.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-25",
       readTime: "10 min read",
       category: "International Payments",
@@ -4774,7 +4774,7 @@ const PaymentMethodSelector = ({ country, amount, onMethodSelect }) => {
         <p>As global commerce continues to evolve, businesses that invest in comprehensive local payment solutions will be better positioned to serve customers worldwide and capture market opportunities. Remember that payment preferences and technologies are constantly evolving, requiring ongoing monitoring, optimization, and adaptation.</p>
         <p>For businesses seeking to expand internationally, consider working with payment integration specialists who understand the complexities of global payment ecosystems and can help you implement solutions tailored to your target markets and business requirements.</p>
       `,
-      author: "Fynteq Team",
+      author: "Rackz Team",
       date: "2023-12-08",
       readTime: "11 min read",
       category: "International Payments",
@@ -5199,7 +5199,7 @@ const price = await stripe.prices.create({
     return contentMap[slug] || `
       <h2>Article Content</h2>
       <p>This article contains detailed information about ${translatedPost?.title || 'Payment Gateway Integration'}. In a full implementation, the complete article content would be here.</p>
-      <p>Fynteq helps businesses implement professional payment gateway integrations tailored to their specific needs.</p>
+      <p>Rackz helps businesses implement professional payment gateway integrations tailored to their specific needs.</p>
     `;
   };
   
@@ -5228,7 +5228,7 @@ const price = await stripe.prices.create({
   const blogPost = translatedPost ? {
     ...translatedPost,
     content: getDefaultContent(slug || ''),
-    author: "Fynteq Team",
+    author: "Rackz Team",
     image: getBlogPostImage(translatedPost.id - 1) // Use id - 1 for 0-based index
   } : allBlogPosts[0];
 
@@ -5254,13 +5254,13 @@ const price = await stripe.prices.create({
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>{blogPost.title} - Payment Gateway Blog | Fynteq</title>
+        <title>{blogPost.title} - Payment Gateway Blog | Rackz</title>
         <meta name="description" content={blogPost.excerpt} />
         <meta name="keywords" content={blogPost.tags.join(', ')} />
-        <link rel="canonical" href={`https://www.fynteq.com/blog/${slug}`} />
+        <link rel="canonical" href={`https://getrackz.com/blog/${slug}`} />
         <meta property="og:title" content={blogPost.title} />
         <meta property="og:description" content={blogPost.excerpt} />
-        <meta property="og:url" content={`https://www.fynteq.com/blog/${slug}`} />
+        <meta property="og:url" content={`https://getrackz.com/blog/${slug}`} />
         <meta property="og:type" content="article" />
         <meta property="article:author" content={blogPost.author} />
         <meta property="article:published_time" content={blogPost.date} />
@@ -5272,7 +5272,7 @@ const price = await stripe.prices.create({
             "@type": "BlogPosting",
             "headline": blogPost.title,
             "description": blogPost.excerpt,
-            "url": `https://www.fynteq.com/blog/${slug}`,
+            "url": `https://getrackz.com/blog/${slug}`,
             "datePublished": blogPost.date,
             "author": {
               "@type": "Organization",
@@ -5280,8 +5280,8 @@ const price = await stripe.prices.create({
             },
             "publisher": {
               "@type": "Organization",
-              "name": "Fynteq",
-              "url": "https://www.fynteq.com"
+              "name": "Rackz",
+              "url": "https://getrackz.com"
             },
             "articleSection": blogPost.category,
             "keywords": blogPost.tags.join(', '),

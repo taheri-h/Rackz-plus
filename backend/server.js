@@ -8,6 +8,7 @@ const { getRecentPayments } = require("./utils/stripePayments");
 const auth = require("./middleware/auth");
 const User = require("./models/User");
 const ConnectedProvider = require("./models/ConnectedProvider");
+const WebhookEvent = require("./models/WebhookEvent");
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -55,6 +56,80 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Stripe webhook endpoint must use raw body, so register it before JSON parser
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || null;
+
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    let event;
+
+    const sig = req.headers["stripe-signature"];
+
+    if (stripeWebhookSecret) {
+      try {
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          sig,
+          stripeWebhookSecret
+        );
+      } catch (err) {
+        console.error("❌ Stripe webhook signature verification failed:", err);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
+    } else {
+      // No secret configured – accept the event without verification (dev only)
+      try {
+        event = JSON.parse(req.body);
+      } catch (err) {
+        console.error("❌ Failed to parse Stripe webhook body:", err);
+        return res.status(400).send("Invalid webhook payload");
+      }
+    }
+
+    try {
+      const { id, type, created, data, livemode, account, request } = event;
+
+      const relatedObjectId =
+        data && data.object && (data.object.id || data.object.payment_intent);
+
+      await WebhookEvent.create({
+        eventId: id,
+        type,
+        account: account || null,
+        apiVersion: event.api_version || null,
+        createdAt: new Date(created * 1000),
+        livemode: !!livemode,
+        requestId: request && request.id ? request.id : null,
+        relatedObjectId: relatedObjectId || null,
+        raw: event,
+        status: "received",
+      });
+
+      // Basic routing for important events – can be expanded later
+      switch (type) {
+        case "payment_intent.succeeded":
+        case "payment_intent.payment_failed":
+        case "charge.failed":
+        case "checkout.session.completed":
+        case "checkout.session.expired":
+          // For now we just store the event; later we can update aggregates or trigger alerts
+          break;
+        default:
+          break;
+      }
+
+      res.json({ received: true });
+    } catch (err) {
+      console.error("❌ Error handling Stripe webhook:", err);
+      res.status(500).send("Webhook handler error");
+    }
+  }
+);
+
+// JSON parsers for the rest of the API
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

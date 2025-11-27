@@ -392,14 +392,21 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     const allowedRanges = [7, 30, 90, 180, 365];
     const effectiveRange =
       !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 30;
-    const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
+
+    const offsetDaysRaw = parseInt(req.query.offsetDays, 10);
+    const offsetDays =
+      !isNaN(offsetDaysRaw) && offsetDaysRaw >= 0 ? offsetDaysRaw : 0;
+
+    const periodEnd = nowSeconds - offsetDays * 24 * 60 * 60;
+    const periodStart = periodEnd - effectiveRange * 24 * 60 * 60;
 
     try {
       const charges = await stripe.charges.list(
         {
           limit: 100,
           created: {
-            gte: sinceSeconds,
+            gte: periodStart,
+            lte: periodEnd,
           },
         },
         {
@@ -426,8 +433,8 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
         currency: charges.data[0]?.currency || null,
         totalCount,
         failedCount,
-        periodStart: sinceSeconds,
-        periodEnd: nowSeconds,
+        periodStart,
+        periodEnd,
         rangeDays: effectiveRange,
       });
     } catch (stripeErr) {

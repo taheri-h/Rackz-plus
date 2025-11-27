@@ -1,14 +1,30 @@
 import React from 'react';
 import IntegrationsSection from './IntegrationsSection';
 
-const StarterDashboard: React.FC = () => {
-  // Mock data - in real app, this would come from API
-  const healthScore = 87;
-  const successRate = 94.2;
-  const failedRate = 5.8;
+type StarterDashboardProps = {
+  healthScore?: number;
+  successRatePct?: number;
+  failureRatePct?: number;
+  successfulPayments?: number;
+  failedPayments?: number;
+  rangeLabel?: string;
+};
+
+const StarterDashboard: React.FC<StarterDashboardProps> = ({
+  healthScore,
+  successRatePct,
+  failureRatePct,
+  successfulPayments,
+  failedPayments,
+  rangeLabel,
+}) => {
+  // Fallback mock data when real metrics are not provided
+  const computedHealthScore = healthScore ?? 87;
+  const computedSuccessRate = successRatePct ?? 94.2;
+  const computedFailureRate = failureRatePct ?? 5.8;
   const totalRevenue = 12450;
-  const successfulPayments = 342;
-  const failedPayments = 21;
+  const computedSuccessfulPayments = successfulPayments ?? 342;
+  const computedFailedPayments = failedPayments ?? 21;
 
   const last7Days = [
     { day: 'Mon', success: 45, failed: 3 },
@@ -33,40 +49,46 @@ const StarterDashboard: React.FC = () => {
         <h2 className="text-lg font-semibold text-slate-900 mb-6">Payment Health Score</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <div className="text-4xl font-bold text-slate-900 mb-2">{healthScore}</div>
+            <div className="text-4xl font-bold text-slate-900 mb-2">{computedHealthScore}</div>
             <div className="text-sm text-slate-600">Overall Score</div>
             <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-slate-900 transition-all"
-                style={{ width: `${healthScore}%` }}
+                style={{ width: `${computedHealthScore}%` }}
               />
             </div>
           </div>
           <div>
-            <div className="text-2xl font-semibold text-slate-900 mb-2">{successRate}%</div>
+            <div className="text-2xl font-semibold text-slate-900 mb-2">
+              {computedSuccessRate.toFixed(2)}%
+            </div>
             <div className="text-sm text-slate-600">Success Rate</div>
             <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-slate-900 transition-all"
-                style={{ width: `${successRate}%` }}
+                style={{ width: `${computedSuccessRate}%` }}
               />
             </div>
           </div>
           <div>
-            <div className="text-2xl font-semibold text-slate-900 mb-2">{failedRate}%</div>
+            <div className="text-2xl font-semibold text-slate-900 mb-2">
+              {computedFailureRate.toFixed(2)}%
+            </div>
             <div className="text-sm text-slate-600">Failure Rate</div>
             <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-slate-300 transition-all"
-                style={{ width: `${failedRate}%` }}
+                style={{ width: `${computedFailureRate}%` }}
               />
             </div>
           </div>
         </div>
         <div className="mt-6 pt-6 border-t border-slate-100">
-          <div className="text-sm text-slate-600">Last 7 days summary</div>
+          <div className="text-sm text-slate-600">
+            {rangeLabel ? `Last ${rangeLabel} summary` : 'Last 7 days summary'}
+          </div>
           <div className="mt-2 text-sm text-slate-900">
-            {successfulPayments} successful, {failedPayments} failed payments
+            {computedSuccessfulPayments} successful, {computedFailedPayments} failed payments
           </div>
         </div>
       </div>
@@ -78,11 +100,11 @@ const StarterDashboard: React.FC = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">Successful</span>
-              <span className="text-lg font-semibold text-slate-900">{successfulPayments}</span>
+              <span className="text-lg font-semibold text-slate-900">{computedSuccessfulPayments}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">Failed</span>
-              <span className="text-lg font-semibold text-slate-900">{failedPayments}</span>
+              <span className="text-lg font-semibold text-slate-900">{computedFailedPayments}</span>
             </div>
             <div className="pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center">
@@ -92,7 +114,9 @@ const StarterDashboard: React.FC = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">Avg Success Rate</span>
-              <span className="text-base font-semibold text-slate-900">{successRate}%</span>
+              <span className="text-base font-semibold text-slate-900">
+                {computedSuccessRate.toFixed(2)}%
+              </span>
             </div>
           </div>
         </div>

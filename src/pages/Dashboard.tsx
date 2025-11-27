@@ -28,6 +28,12 @@ const Dashboard: React.FC = () => {
     totalCount: number;
     failedCount: number;
   } | null>(null);
+  const [stripePrevSummary, setStripePrevSummary] = useState<{
+    totalVolume: number;
+    currency: string | null;
+    totalCount: number;
+    failedCount: number;
+  } | null>(null);
   const [stripeSummaryStatus, setStripeSummaryStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [selectedCharge, setSelectedCharge] = useState<any | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<any | null>(null);
@@ -272,24 +278,45 @@ const Dashboard: React.FC = () => {
     const fetchSummary = async () => {
       try {
         setStripeSummaryStatus('loading');
-        const response = await apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
 
-        if (!response.ok) {
+        const [currentRes, prevRes] = await Promise.all([
+          apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }),
+          apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}&offsetDays=${stripeRangeDays}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        if (!currentRes.ok) {
           setStripeSummaryStatus('error');
           return;
         }
 
-        const data = await response.json();
+        const currentData = await currentRes.json();
         setStripeSummary({
-          totalVolume: data.totalVolume || 0,
-          currency: data.currency || null,
-          totalCount: data.totalCount || 0,
-          failedCount: data.failedCount || 0,
+          totalVolume: currentData.totalVolume || 0,
+          currency: currentData.currency || null,
+          totalCount: currentData.totalCount || 0,
+          failedCount: currentData.failedCount || 0,
         });
+
+        if (prevRes.ok) {
+          const prevData = await prevRes.json();
+          setStripePrevSummary({
+            totalVolume: prevData.totalVolume || 0,
+            currency: prevData.currency || null,
+            totalCount: prevData.totalCount || 0,
+            failedCount: prevData.failedCount || 0,
+          });
+        } else {
+          setStripePrevSummary(null);
+        }
+
         setStripeSummaryStatus('loaded');
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
@@ -466,6 +493,27 @@ const Dashboard: React.FC = () => {
         };
       });
   }, [stripeSubscriptions]);
+
+  // Derived health metrics based on summary for Payment Health Score card
+  const healthMetrics = React.useMemo(() => {
+    if (!stripeSummary) {
+      return null;
+    }
+
+    const failureRate =
+      stripeSummary.totalCount > 0
+        ? stripeSummary.failedCount / stripeSummary.totalCount
+        : 0;
+    const successRate = 1 - failureRate;
+
+    const healthScore = Math.round(successRate * 100);
+
+    return {
+      failureRatePct: failureRate * 100,
+      successRatePct: successRate * 100,
+      healthScore,
+    };
+  }, [stripeSummary]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -1048,7 +1096,24 @@ const Dashboard: React.FC = () => {
         {/* Show appropriate dashboard based on plan */}
         {packageType && (
           <>
-            {packageType === 'starter' && <StarterDashboard />}
+            {packageType === 'starter' && (
+              <StarterDashboard
+                healthScore={healthMetrics?.healthScore}
+                successRatePct={healthMetrics?.successRatePct}
+                failureRatePct={healthMetrics?.failureRatePct}
+                successfulPayments={
+                  stripeSummary ? stripeSummary.totalCount - stripeSummary.failedCount : undefined
+                }
+                failedPayments={stripeSummary?.failedCount}
+                rangeLabel={
+                  stripeRangeDays === 365
+                    ? '12 months'
+                    : stripeRangeDays === 180
+                    ? '6 months'
+                    : `${stripeRangeDays} days`
+                }
+              />
+            )}
             {packageType === 'pro' && <ProDashboard />}
             {packageType === 'scale' && <ScaleDashboard />}
           </>

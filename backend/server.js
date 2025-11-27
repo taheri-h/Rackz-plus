@@ -278,6 +278,7 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
       const subscriptions = await stripe.subscriptions.list(
         {
           limit: 20,
+          status: "all",
           expand: ["data.customer", "data.items.data.price"],
         },
         {

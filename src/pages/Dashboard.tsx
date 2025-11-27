@@ -371,6 +371,102 @@ const Dashboard: React.FC = () => {
 
   const planName = packageType?.charAt(0).toUpperCase() + packageType?.slice(1) || 'Dashboard';
 
+  // Derived MRR by plan from subscriptions
+  const mrrByPlan = React.useMemo(() => {
+    const planMap = new Map<
+      string,
+      {
+        label: string;
+        currency: string | null;
+        mrr: number;
+      }
+    >();
+
+    stripeSubscriptions.forEach((sub) => {
+      // Only consider active or trialing subscriptions that are not fully cancelled
+      if (
+        !['active', 'trialing', 'past_due'].includes(sub.status) ||
+        sub.canceled_at
+      ) {
+        return;
+      }
+
+      (sub.items || []).forEach((item: any) => {
+        if (item.amount == null || !item.currency || !item.interval) return;
+
+        const amount = item.amount; // in smallest currency unit
+        const currency = (item.currency as string).toUpperCase();
+
+        // Normalize to monthly recurring value
+        let monthlyAmount = amount;
+        if (item.interval === 'year') {
+          monthlyAmount = amount / 12;
+        } else if (item.interval === 'week') {
+          monthlyAmount = amount * 4; // simple approximation
+        } else if (item.interval === 'day') {
+          monthlyAmount = amount * 30; // simple approximation
+        }
+
+        const label =
+          item.productName ||
+          item.priceNickname ||
+          item.productId ||
+          item.priceId ||
+          'Unnamed plan';
+
+        const key = `${label}:${currency}`;
+        const existing = planMap.get(key);
+
+        if (existing) {
+          existing.mrr += monthlyAmount;
+        } else {
+          planMap.set(key, {
+            label,
+            currency,
+            mrr: monthlyAmount,
+          });
+        }
+      });
+    });
+
+    return Array.from(planMap.values()).sort((a, b) => b.mrr - a.mrr);
+  }, [stripeSubscriptions]);
+
+  // Derived churn candidates from subscriptions
+  const churnCandidates = React.useMemo(() => {
+    return stripeSubscriptions
+      .filter((sub) => sub.cancel_at_period_end || sub.canceled_at)
+      .map((sub) => {
+        const firstItem = sub.items?.[0];
+        const amount =
+          firstItem && firstItem.amount != null
+            ? (firstItem.amount / 100).toFixed(2)
+            : null;
+        const currency = (firstItem?.currency || '').toUpperCase();
+        const interval = firstItem?.interval;
+
+        const nextBilling =
+          sub.current_period_end
+            ? new Date(sub.current_period_end * 1000).toLocaleDateString()
+            : '—';
+
+        return {
+          id: sub.id,
+          customer:
+            sub.customerName || sub.customerEmail || sub.customerId || '—',
+          plan:
+            firstItem?.productName ||
+            firstItem?.priceNickname ||
+            firstItem?.productId ||
+            firstItem?.priceId ||
+            '—',
+          amount: amount ? `${amount} ${currency} / ${interval}` : null,
+          nextBilling,
+          status: sub.cancel_at_period_end ? 'Cancels at period end' : 'Canceled',
+        };
+      });
+  }, [stripeSubscriptions]);
+
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
@@ -760,6 +856,83 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* MRR by Plan */}
+        {stripeStatus === 'connected' && stripeSubscriptionsStatus === 'loaded' && mrrByPlan.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">MRR by Plan</h2>
+            <div className="overflow-x-auto border border-slate-100 rounded-xl">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Plan</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">MRR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mrrByPlan.map((plan) => (
+                    <tr key={`${plan.label}-${plan.currency}`} className="border-t border-slate-100">
+                      <td className="px-4 py-2 text-slate-700">{plan.label}</td>
+                      <td className="px-4 py-2 text-slate-900 font-medium">
+                        {(plan.mrr / 100).toFixed(2)} {plan.currency}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Churn Candidates */}
+        {stripeStatus === 'connected' &&
+          stripeSubscriptionsStatus === 'loaded' &&
+          churnCandidates.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">Churn Candidates</h2>
+              <p className="text-sm text-slate-500 mb-3">
+                Subscriptions that have been cancelled or set to cancel at the end of the period.
+              </p>
+              <div className="overflow-x-auto border border-amber-100 rounded-xl bg-amber-50/40">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-amber-50 border-b border-amber-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">
+                        Plan
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">
+                        Next Billing
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {churnCandidates.map((c) => (
+                      <tr
+                        key={c.id}
+                        className="border-t border-amber-100 cursor-pointer hover:bg-amber-50/80"
+                        onClick={() =>
+                          setSelectedSubscription(
+                            stripeSubscriptions.find((s) => s.id === c.id) || null
+                          )
+                        }
+                      >
+                        <td className="px-4 py-2 text-amber-900">{c.customer}</td>
+                        <td className="px-4 py-2 text-amber-900">{c.plan}</td>
+                        <td className="px-4 py-2 text-amber-900">{c.status}</td>
+                        <td className="px-4 py-2 text-amber-900">{c.nextBilling}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
         {/* Charge detail modal */}
         {selectedCharge && (

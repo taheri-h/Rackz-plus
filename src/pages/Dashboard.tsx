@@ -144,12 +144,23 @@ const Dashboard: React.FC = () => {
 
   // Load Stripe account data from backend for this user
   useEffect(() => {
-    if (!user) return;
+    console.log('🔍 Dashboard useEffect triggered, user:', user ? { id: user.id, email: user.email } : 'null');
+    
+    if (!user) {
+      console.log('❌ No user, skipping Stripe fetch');
+      return;
+    }
 
     const token = getAuthToken();
-    if (!token) return;
+    console.log('🔑 Auth token:', token ? 'exists' : 'missing');
+    
+    if (!token) {
+      console.log('❌ No auth token, skipping Stripe fetch');
+      return;
+    }
 
     const fetchStripeAccount = async () => {
+      console.log('🚀 Starting Stripe account fetch...');
       try {
         setStripeStatus('loading');
         const response = await apiCall('/stripe/account', {
@@ -159,11 +170,14 @@ const Dashboard: React.FC = () => {
         });
 
         if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Stripe account fetch failed:', response.status, errorData);
           setStripeStatus('error');
           return;
         }
 
         const data = await response.json();
+        console.log('Stripe account response:', data);
 
         if (data.connected && data.account) {
           setStripeAccount(data.account);
@@ -179,12 +193,11 @@ const Dashboard: React.FC = () => {
           const userProvidersKey = `connectedProviders_${user.id}`;
           localStorage.setItem(userProvidersKey, JSON.stringify(updatedProviders));
         } else {
+          console.log('Stripe not connected for user:', data);
           setStripeStatus('not_connected');
         }
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error loading Stripe account:', error);
-        }
+        console.error('Error loading Stripe account:', error);
         setStripeStatus('error');
       }
     };
@@ -546,6 +559,14 @@ const Dashboard: React.FC = () => {
     };
   }, [stripeSummary]);
 
+  // Debug: Log current state
+  console.log('📊 Dashboard render state:', {
+    user: user ? { id: user.id, email: user.email, stripeAccountId: user.stripeAccountId } : null,
+    stripeStatus,
+    packageType,
+    connectedProviders,
+  });
+
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
@@ -570,6 +591,22 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-12">
+        {/* Stripe Connection Status Messages */}
+        {stripeStatus === 'loading' && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">Loading Stripe account...</p>
+          </div>
+        )}
+        {stripeStatus === 'error' && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">Error loading Stripe account. Please try refreshing the page.</p>
+          </div>
+        )}
+        {stripeStatus === 'not_connected' && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">No Stripe account connected. Connect your Stripe account below to see payment data.</p>
+          </div>
+        )}
         {/* Stripe Summary Cards + Range Filter */}
         {stripeStatus === 'connected' && (
           <div className="mb-10">

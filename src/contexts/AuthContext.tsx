@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { API_URL } from '../utils/api';
+import { API_URL, TOKEN_EXPIRED_EVENT } from '../utils/api';
 
 interface User {
   id: string;
@@ -41,6 +41,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const signout = () => {
+    setUser(null);
+    sessionStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
+  };
+
+  // Listen for token expiration events from API calls
+  useEffect(() => {
+    const handleTokenExpired = () => {
+      console.log('🔒 Token expired event received. Logging out user...');
+      // Clear user state and tokens
+      setUser(null);
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      // Redirect to signin page
+      window.location.href = '/signin';
+    };
+
+    window.addEventListener(TOKEN_EXPIRED_EVENT, handleTokenExpired);
+
+    return () => {
+      window.removeEventListener(TOKEN_EXPIRED_EVENT, handleTokenExpired);
+    };
+  }, []);
+
   // Load user and token from sessionStorage on mount
   useEffect(() => {
     const loadUser = async () => {
@@ -59,7 +84,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               const data = await response.json();
               setUser(data.user);
             } else {
-              // Token invalid, clear it
+              // Token invalid or expired (401), clear it
+              if (response.status === 401) {
+                console.log('🔒 Token expired on initial load. Clearing session...');
+              }
               sessionStorage.removeItem('authToken');
               localStorage.removeItem('authUser');
             }
@@ -181,12 +209,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       throw error;
     }
-  };
-
-  const signout = () => {
-    setUser(null);
-    sessionStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
   };
 
   const getAuthToken = () => {

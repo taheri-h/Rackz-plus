@@ -26,6 +26,17 @@ export const getApiUrl = (): string => {
 // Export the API URL
 export const API_URL = getApiUrl();
 
+// Event to trigger logout on token expiration
+const TOKEN_EXPIRED_EVENT = 'tokenExpired';
+
+/**
+ * Dispatch event to trigger logout when token expires
+ */
+const handleTokenExpiration = () => {
+  // Dispatch custom event that AuthContext will listen to
+  window.dispatchEvent(new CustomEvent(TOKEN_EXPIRED_EVENT));
+};
+
 // Helper function to make API calls with proper error handling
 export const apiCall = async (
   endpoint: string,
@@ -41,8 +52,17 @@ export const apiCall = async (
     },
   });
 
+  // Check for 401 Unauthorized (expired/invalid token)
+  if (response.status === 401) {
+    console.warn('🔒 Authentication token expired or invalid. Logging out...');
+    handleTokenExpiration();
+  }
+
   return response;
 };
+
+// Export event name for AuthContext to listen to
+export { TOKEN_EXPIRED_EVENT };
 
 // Log API URL for debugging (only in development, can be removed in production)
 // Uncomment below if you need to debug API URL issues

@@ -362,6 +362,67 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
   }
 });
 
+// 6) Get summary metrics (last 30 days) for the authenticated user's connected account
+app.get("/api/stripe/summary", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const thirtyDaysAgo = nowSeconds - 30 * 24 * 60 * 60;
+
+    try {
+      const charges = await stripe.charges.list(
+        {
+          limit: 100,
+          created: {
+            gte: thirtyDaysAgo,
+          },
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      let totalVolume = 0;
+      let totalCount = 0;
+      let failedCount = 0;
+
+      for (const charge of charges.data) {
+        totalCount += 1;
+        if (charge.paid && charge.status === "succeeded") {
+          totalVolume += charge.amount;
+        } else {
+          failedCount += 1;
+        }
+      }
+
+      return res.json({
+        connected: true,
+        totalVolume, // in smallest currency unit (e.g. cents)
+        currency: charges.data[0]?.currency || null,
+        totalCount,
+        failedCount,
+        periodStart: thirtyDaysAgo,
+        periodEnd: nowSeconds,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe summary:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch Stripe summary",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe summary route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

@@ -21,6 +21,13 @@ const Dashboard: React.FC = () => {
   const [stripeChargesStatus, setStripeChargesStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [stripeSubscriptions, setStripeSubscriptions] = useState<any[]>([]);
   const [stripeSubscriptionsStatus, setStripeSubscriptionsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [stripeSummary, setStripeSummary] = useState<{
+    totalVolume: number;
+    currency: string | null;
+    totalCount: number;
+    failedCount: number;
+  } | null>(null);
+  const [stripeSummaryStatus, setStripeSummaryStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   useEffect(() => {
     if (!user) return;
@@ -252,6 +259,46 @@ const Dashboard: React.FC = () => {
     fetchSubscriptions();
   }, [user, getAuthToken]);
 
+  // Load Stripe summary metrics (last 30 days)
+  useEffect(() => {
+    if (!user) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const fetchSummary = async () => {
+      try {
+        setStripeSummaryStatus('loading');
+        const response = await apiCall('/stripe/summary', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          setStripeSummaryStatus('error');
+          return;
+        }
+
+        const data = await response.json();
+        setStripeSummary({
+          totalVolume: data.totalVolume || 0,
+          currency: data.currency || null,
+          totalCount: data.totalCount || 0,
+          failedCount: data.failedCount || 0,
+        });
+        setStripeSummaryStatus('loaded');
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Stripe summary:', error);
+        }
+        setStripeSummaryStatus('error');
+      }
+    };
+
+    fetchSummary();
+  }, [user, getAuthToken]);
+
   const providers = [
     { id: 'stripe', name: 'Stripe', logo: '/images/brands/stripe-logo-AQEyPRPODaTM3Ern.png.avif' },
     { id: 'paypal', name: 'PayPal', logo: '/images/brands/pngimg.com---paypal_png7-mePvDEDJbQCke023.png.avif' },
@@ -345,6 +392,37 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-12">
+        {/* Stripe Summary Cards */}
+        {stripeStatus === 'connected' && stripeSummaryStatus === 'loaded' && stripeSummary && (
+          <div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-4">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                Volume (last 30 days)
+              </div>
+              <div className="text-2xl font-semibold text-slate-900">
+                {stripeSummary.totalVolume
+                  ? `${(stripeSummary.totalVolume / 100).toFixed(2)} ${(stripeSummary.currency || '').toUpperCase()}`
+                  : '0.00'}
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                Payments
+              </div>
+              <div className="text-2xl font-semibold text-slate-900">
+                {stripeSummary.totalCount}
+              </div>
+            </div>
+            <div className="card p-4">
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                Failed Payments
+              </div>
+              <div className="text-2xl font-semibold text-slate-900">
+                {stripeSummary.failedCount}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Connect Payment Providers Section - Show for all plans */}
         <div className="mb-12">
           <h2 className="text-xl font-semibold text-slate-900 mb-6">Connect Payment Providers</h2>

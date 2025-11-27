@@ -828,12 +828,17 @@ const Dashboard: React.FC = () => {
                         );
 
                         return days.map((day, index) => {
+                          const baseSuccess = day.success / maxValue;
+                          const baseFailed = day.failed / maxValue;
+
+                          // Exaggerate heights so low volumes are still visible
                           const successHeight =
-                            (day.success / maxValue) * 100;
+                            baseSuccess > 0 ? 40 + baseSuccess * 60 : 0; // 40–100%
                           const failedHeight =
-                            (day.failed / maxValue) * 100;
-                          const successMin = day.success > 0 ? 10 : 0;
-                          const failedMin = day.failed > 0 ? 6 : 0;
+                            baseFailed > 0 ? 25 + baseFailed * 45 : 0; // 25–70%
+
+                          const successMin = day.success > 0 ? 16 : 0;
+                          const failedMin = day.failed > 0 ? 10 : 0;
 
                           return (
                             <div

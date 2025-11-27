@@ -57,31 +57,6 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
     { type: 'critical', message: 'Webhook failure detected', time: '1d ago' },
   ];
 
-  const dynamicAlerts = React.useMemo(() => {
-    const items = [...baseAlerts];
-
-    if (failureReasons && failureReasons.length && failureTotalAmount && failureCurrency) {
-      const range = failureRangeLabel || '7 days';
-      const currency = (failureCurrency || '').toUpperCase();
-
-      // Add one alert per top failure reason (up to 3), newest first
-      const topReasons = failureReasons.slice(0, 3);
-      const reasonAlerts = topReasons.map((r) => ({
-        type: 'critical' as const,
-        message: `${r.count} failed payment${r.count !== 1 ? 's' : ''} due ${
-          r.reason.replace(/_/g, ' ') || 'card issue'
-        } (${(
-          r.amount / 100
-        ).toFixed(2)} ${currency} at risk)`,
-        time: 'recently',
-      }));
-
-      items.unshift(...reasonAlerts);
-    }
-
-    return items;
-  }, [failureReasons, failureTotalAmount, failureCurrency, failureRangeLabel, baseAlerts]);
-
   return (
     <div className="space-y-8">
       {/* Checkout Health */}
@@ -119,35 +94,6 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
               <div className="text-xs text-slate-600">⚠️ API key misconfiguration detected</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Alerts Feed */}
-      <div className="card p-6">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">Critical Alerts</h3>
-        <div className="space-y-3">
-          {dynamicAlerts.map((alert, index) => (
-            <div 
-              key={index}
-              className={`p-4 rounded-xl border ${
-                alert.type === 'critical' 
-                  ? 'bg-slate-50 border-slate-200' 
-                  : 'bg-white border-slate-100'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-2 h-2 rounded-full ${
-                      alert.type === 'critical' ? 'bg-slate-900' : 'bg-slate-400'
-                    }`} />
-                    <span className="text-sm font-medium text-slate-900">{alert.message}</span>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-500">{alert.time}</span>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 

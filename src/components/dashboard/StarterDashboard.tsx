@@ -14,6 +14,10 @@ type StarterDashboardProps = {
   overviewSuccessRatePct?: number;
   overviewRangeLabel?: string;
   trendDays?: TrendDay[];
+  failureReasons?: { reason: string; count: number; amount: number }[];
+  failureTotalAmount?: number;
+  failureCurrency?: string | null;
+  failureRangeLabel?: string;
 };
 
 const StarterDashboard: React.FC<StarterDashboardProps> = ({
@@ -23,6 +27,10 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
   overviewSuccessRatePct,
   overviewRangeLabel,
   trendDays,
+  failureReasons,
+  failureTotalAmount,
+  failureCurrency,
+  failureRangeLabel,
 }) => {
   // Mock defaults - overridden when real metrics are provided
   const totalRevenue = overviewRevenue ?? 12450;
@@ -43,11 +51,36 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
           { day: 'Sun', success: 44, failed: 4 },
         ];
 
-  const alerts = [
+  const baseAlerts = [
     { type: 'critical', message: 'Checkout error detected on mobile', time: '2h ago' },
     { type: 'warning', message: 'Failed payments increased by 15%', time: '5h ago' },
     { type: 'critical', message: 'Webhook failure detected', time: '1d ago' },
   ];
+
+  const dynamicAlerts = React.useMemo(() => {
+    const items = [...baseAlerts];
+
+    if (failureReasons && failureReasons.length && failureTotalAmount && failureCurrency) {
+      const range = failureRangeLabel || '7 days';
+      const currency = (failureCurrency || '').toUpperCase();
+
+      // Add one alert per top failure reason (up to 3), newest first
+      const topReasons = failureReasons.slice(0, 3);
+      const reasonAlerts = topReasons.map((r) => ({
+        type: 'critical' as const,
+        message: `${r.count} failed payment${r.count !== 1 ? 's' : ''} due ${
+          r.reason.replace(/_/g, ' ') || 'card issue'
+        } (${(
+          r.amount / 100
+        ).toFixed(2)} ${currency} at risk)`,
+        time: 'recently',
+      }));
+
+      items.unshift(...reasonAlerts);
+    }
+
+    return items;
+  }, [failureReasons, failureTotalAmount, failureCurrency, failureRangeLabel, baseAlerts]);
 
   return (
     <div className="space-y-8">
@@ -93,7 +126,7 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
       <div className="card p-6">
         <h3 className="text-base font-semibold text-slate-900 mb-4">Critical Alerts</h3>
         <div className="space-y-3">
-          {alerts.map((alert, index) => (
+          {dynamicAlerts.map((alert, index) => (
             <div 
               key={index}
               className={`p-4 rounded-xl border ${

@@ -449,6 +449,86 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
   }
 });
 
+// 7) Get failure reasons and revenue at risk for the authenticated user's connected account
+app.get("/api/stripe/failures-summary", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const rangeDays = parseInt(req.query.rangeDays, 10);
+    const allowedRanges = [7, 30, 90];
+    const effectiveRange =
+      !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 7;
+    const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
+
+    try {
+      const charges = await stripe.charges.list(
+        {
+          limit: 100,
+          created: {
+            gte: sinceSeconds,
+          },
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      const reasonsMap = new Map();
+      let totalFailedAmount = 0;
+
+      for (const charge of charges.data) {
+        const isSuccess = charge.paid && charge.status === "succeeded";
+        if (isSuccess) continue;
+
+        const reason =
+          charge.failure_code ||
+          charge.outcome?.reason ||
+          charge.outcome?.network_status ||
+          "other";
+
+        const amount = charge.amount || 0;
+        totalFailedAmount += amount;
+
+        const existing = reasonsMap.get(reason) || {
+          reason,
+          count: 0,
+          amount: 0,
+        };
+        existing.count += 1;
+        existing.amount += amount;
+        reasonsMap.set(reason, existing);
+      }
+
+      const reasons = Array.from(reasonsMap.values()).sort(
+        (a, b) => b.amount - a.amount
+      );
+
+      return res.json({
+        connected: true,
+        rangeDays: effectiveRange,
+        totalFailedAmount,
+        currency: charges.data[0]?.currency || null,
+        reasons,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe failures summary:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch Stripe failures summary",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe failures summary route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

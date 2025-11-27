@@ -687,27 +687,166 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Stripe Payments */}
+        {/* Health + Payments Overview + Recent Stripe Payments */}
         {stripeStatus === 'connected' && (
-          <div className="mb-12 space-y-6">
+          <div className="mb-12 space-y-8">
             {/* Payment Health Score card, driven by Stripe summary */}
             {stripeSummaryStatus === 'loaded' && stripeSummary && (
-              <PaymentHealthCard
-                healthScore={healthMetrics?.healthScore}
-                successRatePct={healthMetrics?.successRatePct}
-                failureRatePct={healthMetrics?.failureRatePct}
-                successfulPayments={
-                  stripeSummary.totalCount - stripeSummary.failedCount
-                }
-                failedPayments={stripeSummary.failedCount}
-                rangeLabel={
-                  stripeRangeDays === 365
-                    ? '12 months'
-                    : stripeRangeDays === 180
-                    ? '6 months'
-                    : `${stripeRangeDays} days`
-                }
-              />
+              <>
+                <PaymentHealthCard
+                  healthScore={healthMetrics?.healthScore}
+                  successRatePct={healthMetrics?.successRatePct}
+                  failureRatePct={healthMetrics?.failureRatePct}
+                  successfulPayments={
+                    stripeSummary.totalCount - stripeSummary.failedCount
+                  }
+                  failedPayments={stripeSummary.failedCount}
+                  rangeLabel={
+                    stripeRangeDays === 365
+                      ? '12 months'
+                      : stripeRangeDays === 180
+                      ? '6 months'
+                      : `${stripeRangeDays} days`
+                  }
+                />
+
+                {/* Payments Overview + 7-Day Trend, synced with Stripe */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="card p-6">
+                    <h3 className="text-base font-semibold text-slate-900 mb-4">
+                      Payments Overview ({stripeRangeDays === 365
+                        ? '12 months'
+                        : stripeRangeDays === 180
+                        ? '6 months'
+                        : `${stripeRangeDays} days`}
+                      )
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Successful</span>
+                        <span className="text-lg font-semibold text-slate-900">
+                          {stripeSummary.totalCount - stripeSummary.failedCount}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Failed</span>
+                        <span className="text-lg font-semibold text-slate-900">
+                          {stripeSummary.failedCount}
+                        </span>
+                      </div>
+                      <div className="pt-4 border-t border-slate-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-slate-600">Total Revenue</span>
+                          <span className="text-xl font-bold text-slate-900">
+                            {stripeSummary.totalVolume
+                              ? `${(stripeSummary.totalVolume / 100).toFixed(2)} ${(stripeSummary.currency || '').toUpperCase()}`
+                              : `0.00 ${(stripeSummary.currency || '').toUpperCase()}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600">Avg Success Rate</span>
+                        <span className="text-base font-semibold text-slate-900">
+                          {healthMetrics?.successRatePct.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card p-6">
+                    <h3 className="text-base font-semibold text-slate-900 mb-4">7-Day Trend</h3>
+                    <div className="h-32 flex items-end justify-between gap-1">
+                      {(() => {
+                        const days: { label: string; success: number; failed: number }[] = [];
+                        const now = new Date();
+                        const dayKeys: string[] = [];
+                        for (let i = 6; i >= 0; i--) {
+                          const d = new Date(now);
+                          d.setDate(d.getDate() - i);
+                          const key = d.toISOString().slice(0, 10);
+                          dayKeys.push(key);
+                          days.push({
+                            label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+                            success: 0,
+                            failed: 0,
+                          });
+                        }
+
+                        const sevenDaysAgoMs =
+                          now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+                        stripeCharges.forEach((charge) => {
+                          const createdMs = charge.created * 1000;
+                          if (createdMs < sevenDaysAgoMs) return;
+                          const d = new Date(createdMs);
+                          const key = d.toISOString().slice(0, 10);
+                          const index = dayKeys.indexOf(key);
+                          if (index === -1) return;
+
+                          const isSuccess =
+                            charge.paid && charge.status === 'succeeded';
+                          if (isSuccess) {
+                            days[index].success += 1;
+                          } else {
+                            days[index].failed += 1;
+                          }
+                        });
+
+                        const maxValue = Math.max(
+                          1,
+                          ...days.map((d) => d.success + d.failed)
+                        );
+
+                        return days.map((day, index) => {
+                          const successHeight =
+                            (day.success / maxValue) * 100;
+                          const failedHeight =
+                            (day.failed / maxValue) * 100;
+                          const successMin = day.success > 0 ? 10 : 0;
+                          const failedMin = day.failed > 0 ? 6 : 0;
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex-1 flex flex-col items-center justify-end gap-0.5"
+                            >
+                              <div className="w-full flex flex-col-reverse gap-0.5">
+                                <div
+                                  className="w-full bg-slate-900 rounded-t"
+                                  style={{
+                                    height: `${successHeight}%`,
+                                    minHeight: `${successMin}px`,
+                                  }}
+                                />
+                                <div
+                                  className="w-full bg-slate-300 rounded-t"
+                                  style={{
+                                    height: `${failedHeight}%`,
+                                    minHeight: `${failedMin}px`,
+                                  }}
+                                />
+                              </div>
+                              <span className="text-xs text-slate-500 mt-2">
+                                {day.label}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                    <div className="mt-4 flex gap-4 text-xs text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-slate-900 rounded" />
+                        <span>Success</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-slate-300 rounded" />
+                        <span>Failed</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Recent Stripe Payments</h2>

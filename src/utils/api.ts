@@ -15,7 +15,7 @@ export const getApiUrl = (): string => {
   
   if (isLocalhost) {
     // Development: use local backend
-    return 'http://localhost:5001/api';
+    return 'http://localhost:5050/api';
   }
 
   // 3. Production: use relative path (same domain)

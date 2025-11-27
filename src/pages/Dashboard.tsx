@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import StarterDashboard from '../components/dashboard/StarterDashboard';
 import ProDashboard from '../components/dashboard/ProDashboard';
 import ScaleDashboard from '../components/dashboard/ScaleDashboard';
+import { apiCall } from '../utils/api';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -121,25 +122,50 @@ const Dashboard: React.FC = () => {
   const handleConnectProvider = async (providerId: string) => {
     if (!user) return;
     
-    // Here you would integrate with OAuth for Stripe/PayPal
-    // For now, we'll simulate the connection
-    
-    // Simulate OAuth flow
-    const confirmed = window.confirm(`Connect your ${providers.find(p => p.id === providerId)?.name} account?`);
-    
-    if (confirmed) {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const updatedProviders = [...connectedProviders, providerId];
-      setConnectedProviders(updatedProviders);
-      
-      // Save to user-specific storage
-      const userProvidersKey = `connectedProviders_${user.id}`;
-      localStorage.setItem(userProvidersKey, JSON.stringify(updatedProviders));
-      
-      alert(`${providers.find(p => p.id === providerId)?.name} account connected successfully!`);
+    // Stripe uses real OAuth flow via backend
+    if (providerId === 'stripe') {
+      try {
+        const confirmed = window.confirm('Connect your Stripe account? You will be redirected to Stripe.');
+        if (!confirmed) return;
+
+        const response = await apiCall('/stripe/connect-url');
+        if (!response.ok) {
+          console.error('Failed to get Stripe Connect URL:', response.statusText);
+          alert('Could not start Stripe connection. Please try again.');
+          return;
+        }
+
+        const data = await response.json();
+        if (!data.url) {
+          alert('Stripe connection URL is missing. Please try again.');
+          return;
+        }
+
+        // Redirect browser to Stripe Connect
+        window.location.href = data.url;
+      } catch (error) {
+        console.error('Error starting Stripe Connect flow:', error);
+        alert('Something went wrong starting the Stripe connection. Please try again.');
+      }
+
+      return;
     }
+
+    // For other providers (PayPal, Shopify), keep simulated connection for now
+    const confirmed = window.confirm(`Connect your ${providers.find(p => p.id === providerId)?.name} account?`);
+    if (!confirmed) return;
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const updatedProviders = [...connectedProviders, providerId];
+    setConnectedProviders(updatedProviders);
+
+    // Save to user-specific storage
+    const userProvidersKey = `connectedProviders_${user.id}`;
+    localStorage.setItem(userProvidersKey, JSON.stringify(updatedProviders));
+
+    alert(`${providers.find(p => p.id === providerId)?.name} account connected successfully!`);
   };
 
   const handleDisconnectProvider = (providerId: string) => {

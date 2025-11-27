@@ -6,6 +6,7 @@ import StarterDashboard from '../components/dashboard/StarterDashboard';
 import ProDashboard from '../components/dashboard/ProDashboard';
 import ScaleDashboard from '../components/dashboard/ScaleDashboard';
 import { apiCall } from '../utils/api';
+import ConnectStripeButton from '../components/ConnectStripeButton';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -243,12 +244,27 @@ const Dashboard: React.FC = () => {
                   </div>
 
                   {!isConnected ? (
-                    <button
-                      onClick={() => handleConnectProvider(provider.id)}
-                      className="w-full py-2.5 px-4 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors text-sm"
-                    >
-                      Connect
-                    </button>
+                    provider.id === 'stripe' ? (
+                      <ConnectStripeButton
+                        onConnected={() => {
+                          if (!user) return;
+                          const updatedProviders = [...connectedProviders, 'stripe'];
+                          setConnectedProviders(updatedProviders);
+                          const userProvidersKey = `connectedProviders_${user.id}`;
+                          localStorage.setItem(
+                            userProvidersKey,
+                            JSON.stringify(updatedProviders)
+                          );
+                        }}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => handleConnectProvider(provider.id)}
+                        className="w-full py-2.5 px-4 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition-colors text-sm"
+                      >
+                        Connect
+                      </button>
+                    )
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center justify-center gap-2 text-sm text-slate-600">

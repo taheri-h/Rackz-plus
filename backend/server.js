@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const Stripe = require("stripe");
 const connectDB = require("./config/database");
 const { getRecentPayments } = require("./utils/stripePayments");
+const { sendAlertEmail } = require("./utils/email");
 const auth = require("./middleware/auth");
 const User = require("./models/User");
 const ConnectedProvider = require("./models/ConnectedProvider");
@@ -591,6 +592,101 @@ app.get("/api/stripe/failures-summary", auth, async (req, res) => {
     }
   } catch (err) {
     console.error("Stripe failures summary route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 8) Check failed payment alerts (24h) and send emails if threshold exceeded
+// Intended to be called by a cron/uptime monitor with a shared secret key
+app.post("/api/alerts/check-failed-payments", async (req, res) => {
+  try {
+    const cronKey = process.env.ALERT_CRON_KEY;
+    if (cronKey && req.query.key !== cronKey) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const threshold =
+      parseFloat(process.env.ALERT_FAILURE_RATE_THRESHOLD || "0.05") || 0.05;
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const sinceSeconds = nowSeconds - 24 * 60 * 60;
+
+    const users = await User.find({
+      stripeAccountId: { $ne: null },
+      email: { $ne: null },
+    });
+
+    let alertsSent = 0;
+
+    for (const user of users) {
+      try {
+        const { payments } = await getRecentPayments(
+          stripe,
+          user.stripeAccountId,
+          {
+            limit: 200,
+            createdGte: sinceSeconds,
+          }
+        );
+
+        if (!payments.length) continue;
+
+        let total = 0;
+        let failed = 0;
+        let failedAmount = 0;
+        let currency = null;
+
+        for (const p of payments) {
+          total += 1;
+          if (!currency && p.currency) {
+            currency = p.currency.toUpperCase();
+          }
+          if (!p.paid) {
+            failed += 1;
+            failedAmount += p.amount || 0;
+          }
+        }
+
+        if (total === 0 || failed === 0) continue;
+
+        const failureRate = failed / total;
+        if (failureRate <= threshold) continue;
+
+        const pct = (failureRate * 100).toFixed(2);
+        const amountStr = (failedAmount / 100).toFixed(2);
+
+        const subject = `Rackz Alert: Failed payments ${pct}% in last 24h`;
+        const text = [
+          `Hi ${user.name || ""},`,
+          ``,
+          `In the last 24 hours, your connected Stripe account had:`,
+          `- Total payments: ${total}`,
+          `- Failed payments: ${failed}`,
+          `- Failure rate: ${pct}%`,
+          `- Revenue at risk: ${amountStr} ${currency || ""}`,
+          ``,
+          `Log into your Rackz dashboard for details by failure reason and affected customers.`,
+        ].join("\n");
+
+        if (process.env.SMTP_HOST) {
+          await sendAlertEmail(user.email, subject, text);
+          alertsSent += 1;
+        }
+      } catch (err) {
+        console.error(
+          `Error checking failed payments for user ${user._id}:`,
+          err
+        );
+      }
+    }
+
+    res.json({
+      processedUsers: users.length,
+      alertsSent,
+      threshold,
+    });
+  } catch (err) {
+    console.error("Failed payment alert check error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

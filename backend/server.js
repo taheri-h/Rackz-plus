@@ -159,8 +159,7 @@ app.get("/api/stripe/callback", async (req, res) => {
     }
 
     // After successful connection, redirect back to the frontend dashboard
-    const frontendBase =
-      process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendBase = process.env.FRONTEND_URL || "http://localhost:3000";
 
     // You can read this flag on the frontend (e.g. from query params) to show a success toast
     const redirectUrl = `${frontendBase}/dashboard?stripeConnected=1`;
@@ -247,6 +246,118 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
     }
   } catch (err) {
     console.error("Stripe charges route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 5) Get subscriptions for the authenticated user's connected account
+app.get("/api/stripe/subscriptions", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    try {
+      const subscriptions = await stripe.subscriptions.list(
+        {
+          limit: 20,
+          expand: ["data.customer", "data.items.data.price"],
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      // Collect unique product IDs from prices
+      const productIds = new Set();
+      for (const sub of subscriptions.data) {
+        for (const item of sub.items.data) {
+          const priceObj = typeof item.price === "string" ? null : item.price;
+          const productId =
+            priceObj && typeof priceObj.product === "string"
+              ? priceObj.product
+              : null;
+          if (productId) {
+            productIds.add(productId);
+          }
+        }
+      }
+
+      // Fetch product details to get human-readable names
+      const productNameMap = new Map();
+      if (productIds.size > 0) {
+        try {
+          const products = await stripe.products.list(
+            {
+              ids: Array.from(productIds),
+              limit: productIds.size,
+            },
+            {
+              stripeAccount: user.stripeAccountId,
+            }
+          );
+          for (const product of products.data) {
+            productNameMap.set(product.id, product.name);
+          }
+        } catch (productErr) {
+          console.error("Error fetching Stripe products:", productErr);
+        }
+      }
+
+      const mapped = subscriptions.data.map((sub) => {
+        const customerObj =
+          typeof sub.customer === "string" ? null : sub.customer;
+
+        return {
+          id: sub.id,
+          status: sub.status,
+          created: sub.created,
+          current_period_end: sub.current_period_end,
+          cancel_at_period_end: sub.cancel_at_period_end,
+          canceled_at: sub.canceled_at,
+          customerId:
+            typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
+          customerEmail: customerObj?.email || null,
+          customerName: customerObj?.name || null,
+          items: sub.items.data.map((item) => {
+            const priceObj = typeof item.price === "string" ? null : item.price;
+            const rawProductId =
+              priceObj && typeof priceObj.product === "string"
+                ? priceObj.product
+                : null;
+
+            return {
+              id: item.id,
+              priceId: priceObj?.id || null,
+              priceNickname: priceObj?.nickname || null,
+              productId: rawProductId,
+              productName: rawProductId
+                ? productNameMap.get(rawProductId) || null
+                : null,
+              amount: priceObj?.unit_amount || null,
+              currency: priceObj?.currency || null,
+              interval: priceObj?.recurring?.interval || null,
+            };
+          }),
+        };
+      });
+
+      return res.json({
+        connected: true,
+        subscriptions: mapped,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe subscriptions:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch Stripe subscriptions",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe subscriptions route error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

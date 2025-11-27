@@ -19,6 +19,8 @@ const Dashboard: React.FC = () => {
   const [stripeStatus, setStripeStatus] = useState<'idle' | 'loading' | 'connected' | 'not_connected' | 'error'>('idle');
   const [stripeCharges, setStripeCharges] = useState<any[]>([]);
   const [stripeChargesStatus, setStripeChargesStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [stripeSubscriptions, setStripeSubscriptions] = useState<any[]>([]);
+  const [stripeSubscriptionsStatus, setStripeSubscriptionsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   useEffect(() => {
     if (!user) return;
@@ -208,6 +210,46 @@ const Dashboard: React.FC = () => {
     };
 
     fetchCharges();
+  }, [user, getAuthToken]);
+
+  // Load Stripe subscriptions for this user
+  useEffect(() => {
+    if (!user) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const fetchSubscriptions = async () => {
+      try {
+        setStripeSubscriptionsStatus('loading');
+        const response = await apiCall('/stripe/subscriptions', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          setStripeSubscriptionsStatus('error');
+          return;
+        }
+
+        const data = await response.json();
+        if (data.subscriptions && Array.isArray(data.subscriptions)) {
+          setStripeSubscriptions(data.subscriptions);
+          setStripeSubscriptionsStatus('loaded');
+        } else {
+          setStripeSubscriptions([]);
+          setStripeSubscriptionsStatus('loaded');
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Stripe subscriptions:', error);
+        }
+        setStripeSubscriptionsStatus('error');
+      }
+    };
+
+    fetchSubscriptions();
   }, [user, getAuthToken]);
 
   const providers = [
@@ -513,6 +555,89 @@ const Dashboard: React.FC = () => {
               </div>
             );
           })()
+        )}
+
+        {/* Subscriptions View */}
+        {stripeStatus === 'connected' && (
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Subscriptions</h2>
+            {stripeSubscriptionsStatus === 'loading' && (
+              <p className="text-sm text-slate-500">Loading subscriptions...</p>
+            )}
+            {stripeSubscriptionsStatus === 'error' && (
+              <p className="text-sm text-red-500">Could not load subscriptions.</p>
+            )}
+            {stripeSubscriptionsStatus === 'loaded' && stripeSubscriptions.length === 0 && (
+              <p className="text-sm text-slate-500">No subscriptions found.</p>
+            )}
+            {stripeSubscriptionsStatus === 'loaded' && stripeSubscriptions.length > 0 && (
+              <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Customer</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Plan</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Amount</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Next Billing</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stripeSubscriptions.map((sub) => {
+                      const firstItem = sub.items?.[0];
+                      const amount =
+                        firstItem && firstItem.amount != null
+                          ? (firstItem.amount / 100).toFixed(2)
+                          : null;
+                      const currency = (firstItem?.currency || '').toUpperCase();
+                      const interval = firstItem?.interval;
+
+                      const nextBilling =
+                        sub.current_period_end
+                          ? new Date(sub.current_period_end * 1000).toLocaleDateString()
+                          : '—';
+
+                      let statusLabel = sub.status;
+                      if (sub.cancel_at_period_end) {
+                        statusLabel = 'Cancels at period end';
+                      } else if (sub.canceled_at) {
+                        statusLabel = 'Canceled';
+                      }
+
+                      const statusClass =
+                        sub.status === 'active'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-50 text-slate-700 border border-slate-200';
+
+                      return (
+                        <tr key={sub.id} className="border-t border-slate-100">
+                          <td className="px-4 py-2 text-slate-700">
+                            {sub.customerName || sub.customerEmail || sub.customerId || '—'}
+                          </td>
+                          <td className="px-4 py-2 text-slate-700">
+                            {firstItem?.productName ||
+                              firstItem?.priceNickname ||
+                              firstItem?.productId ||
+                              firstItem?.priceId ||
+                              '—'}
+                          </td>
+                          <td className="px-4 py-2 text-slate-900 font-medium">
+                            {amount ? `${amount} ${currency} / ${interval}` : '—'}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${statusClass}`}>
+                              {statusLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-slate-700">{nextBilling}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Show appropriate dashboard based on plan */}

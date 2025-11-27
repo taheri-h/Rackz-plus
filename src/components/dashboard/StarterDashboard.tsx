@@ -1,22 +1,47 @@
 import React from 'react';
 import IntegrationsSection from './IntegrationsSection';
 
-const StarterDashboard: React.FC = () => {
-  // Mock data - in real app, this would come from API
-  const totalRevenue = 12450;
-  const successfulPayments = 342;
-  const failedPayments = 21;
-  const successRate = 94.2;
+type TrendDay = {
+  label: string;
+  success: number;
+  failed: number;
+};
 
-  const last7Days = [
-    { day: 'Mon', success: 45, failed: 3 },
-    { day: 'Tue', success: 52, failed: 2 },
-    { day: 'Wed', success: 48, failed: 4 },
-    { day: 'Thu', success: 51, failed: 3 },
-    { day: 'Fri', success: 55, failed: 2 },
-    { day: 'Sat', success: 47, failed: 3 },
-    { day: 'Sun', success: 44, failed: 4 },
-  ];
+type StarterDashboardProps = {
+  overviewSuccessful?: number;
+  overviewFailed?: number;
+  overviewRevenue?: number;
+  overviewSuccessRatePct?: number;
+  overviewRangeLabel?: string;
+  trendDays?: TrendDay[];
+};
+
+const StarterDashboard: React.FC<StarterDashboardProps> = ({
+  overviewSuccessful,
+  overviewFailed,
+  overviewRevenue,
+  overviewSuccessRatePct,
+  overviewRangeLabel,
+  trendDays,
+}) => {
+  // Mock defaults - overridden when real metrics are provided
+  const totalRevenue = overviewRevenue ?? 12450;
+  const successfulPayments = overviewSuccessful ?? 342;
+  const failedPayments = overviewFailed ?? 21;
+  const successRate = overviewSuccessRatePct ?? 94.2;
+
+  const last7Days =
+    trendDays && trendDays.length === 7
+      ? trendDays.map((d) => ({ day: d.label, success: d.success, failed: d.failed }))
+      : [
+          { day: 'Mon', success: 45, failed: 3 },
+          { day: 'Tue', success: 52, failed: 2 },
+          { day: 'Wed', success: 48, failed: 4 },
+          { day: 'Thu', success: 51, failed: 3 },
+          { day: 'Fri', success: 55, failed: 2 },
+          { day: 'Sat', success: 47, failed: 3 },
+          { day: 'Sun', success: 44, failed: 4 },
+        ];
 
   const alerts = [
     { type: 'critical', message: 'Checkout error detected on mobile', time: '2h ago' },
@@ -29,7 +54,9 @@ const StarterDashboard: React.FC = () => {
       {/* Payments Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Payments Overview (7 days)</h3>
+          <h3 className="text-base font-semibold text-slate-900 mb-4">
+            Payments Overview ({overviewRangeLabel ?? '7 days'})
+          </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">Successful</span>
@@ -58,20 +85,26 @@ const StarterDashboard: React.FC = () => {
           <h3 className="text-base font-semibold text-slate-900 mb-4">7-Day Trend</h3>
           <div className="h-32 flex items-end justify-between gap-1">
             {last7Days.map((day, index) => {
-              const maxValue = Math.max(...last7Days.map(d => d.success + d.failed));
+              const maxValue = Math.max(
+                1,
+                ...last7Days.map((d) => d.success + d.failed)
+              );
               const successHeight = (day.success / maxValue) * 100;
               const failedHeight = (day.failed / maxValue) * 100;
+
+              const successMin = day.success > 0 ? 10 : 0;
+              const failedMin = day.failed > 0 ? 6 : 0;
               
               return (
                 <div key={index} className="flex-1 flex flex-col items-center justify-end gap-0.5">
                   <div className="w-full flex flex-col-reverse gap-0.5">
                     <div 
                       className="w-full bg-slate-900 rounded-t"
-                      style={{ height: `${successHeight}%`, minHeight: '2px' }}
+                      style={{ height: `${successHeight}%`, minHeight: `${successMin}px` }}
                     />
                     <div 
                       className="w-full bg-slate-300 rounded-t"
-                      style={{ height: `${failedHeight}%`, minHeight: failedHeight > 0 ? '2px' : '0' }}
+                      style={{ height: `${failedHeight}%`, minHeight: `${failedMin}px` }}
                     />
                   </div>
                   <span className="text-xs text-slate-500 mt-2">{day.day}</span>

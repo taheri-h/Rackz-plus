@@ -1117,7 +1117,67 @@ const Dashboard: React.FC = () => {
         {/* Show appropriate dashboard based on plan */}
         {packageType && (
           <>
-            {packageType === 'starter' && <StarterDashboard />}
+            {packageType === 'starter' && (
+              <StarterDashboard
+                overviewSuccessful={
+                  stripeSummary
+                    ? stripeSummary.totalCount - stripeSummary.failedCount
+                    : undefined
+                }
+                overviewFailed={stripeSummary?.failedCount}
+                overviewRevenue={
+                  stripeSummary?.totalVolume
+                    ? stripeSummary.totalVolume / 100
+                    : undefined
+                }
+                overviewSuccessRatePct={healthMetrics?.successRatePct}
+                overviewRangeLabel={
+                  stripeRangeDays === 365
+                    ? '12 months'
+                    : stripeRangeDays === 180
+                    ? '6 months'
+                    : `${stripeRangeDays} days`
+                }
+                trendDays={(() => {
+                  const days: { label: string; success: number; failed: number }[] = [];
+                  const now = new Date();
+                  const dayKeys: string[] = [];
+                  for (let i = 6; i >= 0; i--) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() - i);
+                    const key = d.toISOString().slice(0, 10);
+                    dayKeys.push(key);
+                    days.push({
+                      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+                      success: 0,
+                      failed: 0,
+                    });
+                  }
+
+                  const sevenDaysAgoMs =
+                    now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+                  stripeCharges.forEach((charge) => {
+                    const createdMs = charge.created * 1000;
+                    if (createdMs < sevenDaysAgoMs) return;
+                    const d = new Date(createdMs);
+                    const key = d.toISOString().slice(0, 10);
+                    const index = dayKeys.indexOf(key);
+                    if (index === -1) return;
+
+                    const isSuccess =
+                      charge.paid && charge.status === 'succeeded';
+                    if (isSuccess) {
+                      days[index].success += 1;
+                    } else {
+                      days[index].failed += 1;
+                    }
+                  });
+
+                  return days;
+                })()}
+              />
+            )}
             {packageType === 'pro' && <ProDashboard />}
             {packageType === 'scale' && <ScaleDashboard />}
           </>

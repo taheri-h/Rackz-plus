@@ -4,6 +4,7 @@ const cors = require("cors");
 const crypto = require("crypto");
 const Stripe = require("stripe");
 const connectDB = require("./config/database");
+const { getRecentPayments } = require("./utils/stripePayments");
 const auth = require("./middleware/auth");
 const User = require("./models/User");
 const ConnectedProvider = require("./models/ConnectedProvider");
@@ -220,30 +221,26 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       const nowSeconds = Math.floor(Date.now() / 1000);
       const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
 
-      const charges = await stripe.charges.list(
+      const { payments } = await getRecentPayments(
+        stripe,
+        user.stripeAccountId,
         {
           limit: 20,
-          created: {
-            gte: sinceSeconds,
-          },
-        },
-        {
-          stripeAccount: user.stripeAccountId,
+          createdGte: sinceSeconds,
         }
       );
 
-      // Map to a lighter payload for the frontend
-      const mapped = charges.data.map((charge) => ({
-        id: charge.id,
-        amount: charge.amount,
-        currency: charge.currency,
-        status: charge.status,
-        created: charge.created,
-        description: charge.description,
-        customer: charge.billing_details?.email || charge.receipt_email || null,
-        paid: charge.paid,
-        failure_code: charge.failure_code || null,
-        failure_message: charge.failure_message || null,
+      const mapped = payments.map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        currency: p.currency,
+        status: p.status,
+        created: p.created,
+        description: null,
+        customer: p.customer,
+        paid: p.paid,
+        failure_code: p.failure_code,
+        failure_message: p.failure_message,
       }));
 
       return res.json({
@@ -401,16 +398,13 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     const periodStart = periodEnd - effectiveRange * 24 * 60 * 60;
 
     try {
-      const charges = await stripe.charges.list(
+      const { payments } = await getRecentPayments(
+        stripe,
+        user.stripeAccountId,
         {
           limit: 100,
-          created: {
-            gte: periodStart,
-            lte: periodEnd,
-          },
-        },
-        {
-          stripeAccount: user.stripeAccountId,
+          createdGte: periodStart,
+          createdLte: periodEnd,
         }
       );
 
@@ -418,10 +412,10 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       let totalCount = 0;
       let failedCount = 0;
 
-      for (const charge of charges.data) {
+      for (const p of payments) {
         totalCount += 1;
-        if (charge.paid && charge.status === "succeeded") {
-          totalVolume += charge.amount;
+        if (p.paid) {
+          totalVolume += p.amount;
         } else {
           failedCount += 1;
         }
@@ -430,7 +424,7 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       return res.json({
         connected: true,
         totalVolume, // in smallest currency unit (e.g. cents)
-        currency: charges.data[0]?.currency || null,
+        currency: payments[0]?.currency || null,
         totalCount,
         failedCount,
         periodStart,
@@ -468,32 +462,29 @@ app.get("/api/stripe/failures-summary", auth, async (req, res) => {
     const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
 
     try {
-      const charges = await stripe.charges.list(
+      const { payments } = await getRecentPayments(
+        stripe,
+        user.stripeAccountId,
         {
           limit: 100,
-          created: {
-            gte: sinceSeconds,
-          },
-        },
-        {
-          stripeAccount: user.stripeAccountId,
+          createdGte: sinceSeconds,
         }
       );
 
       const reasonsMap = new Map();
       let totalFailedAmount = 0;
 
-      for (const charge of charges.data) {
-        const isSuccess = charge.paid && charge.status === "succeeded";
-        if (isSuccess) continue;
+      for (const p of payments) {
+        if (p.paid) continue;
 
         const reason =
-          charge.failure_code ||
-          charge.outcome?.reason ||
-          charge.outcome?.network_status ||
-          "other";
+          p.failure_code ||
+          (p.failure_message &&
+            p.failure_message.toLowerCase().includes("insufficient"))
+            ? "insufficient_funds"
+            : p.failure_code || "other";
 
-        const amount = charge.amount || 0;
+        const amount = p.amount || 0;
         totalFailedAmount += amount;
 
         const existing = reasonsMap.get(reason) || {
@@ -514,7 +505,7 @@ app.get("/api/stripe/failures-summary", auth, async (req, res) => {
         connected: true,
         rangeDays: effectiveRange,
         totalFailedAmount,
-        currency: charges.data[0]?.currency || null,
+        currency: payments[0]?.currency || null,
         reasons,
       });
     } catch (stripeErr) {

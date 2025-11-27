@@ -453,6 +453,68 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Payment Issues / Failed Payments */}
+        {stripeStatus === 'connected' && stripeChargesStatus === 'loaded' && (
+          (() => {
+            const failedCharges = stripeCharges.filter(
+              (charge) => !charge.paid || charge.status !== 'succeeded'
+            );
+
+            if (failedCharges.length === 0) {
+              return null;
+            }
+
+            return (
+              <div className="mb-12">
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Payment Issues</h2>
+                <p className="text-sm text-slate-500 mb-3">
+                  Recent failed or blocked payments from your connected Stripe account.
+                </p>
+                <div className="overflow-x-auto border border-amber-100 rounded-xl bg-amber-50/40">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-amber-50 border-b border-amber-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">Amount</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">Customer</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-amber-800 uppercase">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {failedCharges.map((charge) => {
+                        const date = new Date(charge.created * 1000);
+                        const amount = (charge.amount / 100).toFixed(2);
+                        const currency = (charge.currency || '').toUpperCase();
+                        const reason =
+                          charge.failure_message ||
+                          charge.failure_code ||
+                          'Payment did not succeed';
+
+                        return (
+                          <tr key={charge.id} className="border-t border-amber-100">
+                            <td className="px-4 py-2 text-amber-900">
+                              {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="px-4 py-2 text-amber-900 font-medium">
+                              {amount} {currency}
+                            </td>
+                            <td className="px-4 py-2 text-amber-900">
+                              {charge.customer || '—'}
+                            </td>
+                            <td className="px-4 py-2 text-amber-900">
+                              {reason}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()
+        )}
+
         {/* Show appropriate dashboard based on plan */}
         {packageType && (
           <>

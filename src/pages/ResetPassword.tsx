@@ -67,6 +67,20 @@ const ResetPassword: React.FC = () => {
       setIsSubmitting(false);
       return;
     }
+    if (formData.newPassword.length > 128) {
+      setError('Password must be less than 128 characters');
+      setIsSubmitting(false);
+      return;
+    }
+    // Check for at least one uppercase, one lowercase, and one number
+    const hasUpperCase = /[A-Z]/.test(formData.newPassword);
+    const hasLowerCase = /[a-z]/.test(formData.newPassword);
+    const hasNumber = /[0-9]/.test(formData.newPassword);
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+      setIsSubmitting(false);
+      return;
+    }
 
     if (formData.newPassword !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -212,10 +226,14 @@ const ResetPassword: React.FC = () => {
                 value={formData.newPassword}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                placeholder="Enter new password (min. 8 characters)"
+                placeholder="Min 8 chars: uppercase, lowercase, number"
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={128}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Must contain uppercase, lowercase, and number
+              </p>
             </div>
 
             <div>
@@ -233,6 +251,7 @@ const ResetPassword: React.FC = () => {
                 placeholder="Confirm new password"
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={128}
               />
             </div>
 

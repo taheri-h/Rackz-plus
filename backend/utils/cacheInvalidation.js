@@ -19,11 +19,13 @@ async function invalidateUserStripeCache(userId, reason = "Manual invalidation")
       StripeSummaryCache.deleteMany({ userId: userIdStr }),
     ]);
 
-    console.log(`🗑️  Invalidated Stripe cache for user ${userIdStr} (${reason}):`, {
-      charges: chargesDeleted.deletedCount,
-      subscriptions: subscriptionsDeleted.deletedCount,
-      summary: summaryDeleted.deletedCount,
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🗑️  Invalidated Stripe cache for user ${userIdStr} (${reason}):`, {
+        charges: chargesDeleted.deletedCount,
+        subscriptions: subscriptionsDeleted.deletedCount,
+        summary: summaryDeleted.deletedCount,
+      });
+    }
 
     return {
       charges: chargesDeleted.deletedCount,
@@ -48,7 +50,9 @@ async function invalidateStripeAccountCache(stripeAccountId, reason = "Webhook e
     const users = await User.find({ stripeAccountId });
     
     if (users.length === 0) {
-      console.log(`⚠️  No users found for Stripe account ${stripeAccountId}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`⚠️  No users found for Stripe account ${stripeAccountId}`);
+      }
       return { users: 0, totalDeleted: 0 };
     }
 
@@ -62,9 +66,11 @@ async function invalidateStripeAccountCache(stripeAccountId, reason = "Webhook e
       0
     );
 
-    console.log(
-      `🗑️  Invalidated cache for ${users.length} user(s) with Stripe account ${stripeAccountId}: ${totalDeleted} cache entries`
-    );
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `🗑️  Invalidated cache for ${users.length} user(s) with Stripe account ${stripeAccountId}: ${totalDeleted} cache entries`
+      );
+    }
 
     return {
       users: users.length,

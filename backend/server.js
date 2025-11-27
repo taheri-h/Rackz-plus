@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const Stripe = require("stripe");
+const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/database");
 const { getRecentPayments } = require("./utils/stripePayments");
 const { sendAlertEmail } = require("./utils/email");
@@ -56,6 +57,23 @@ const getCorsOrigin = () => {
   return true; // Allow same origin
 };
 
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit auth endpoints to 5 requests per windowMs
+  message: "Too many authentication attempts, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
 app.use(
   cors({
@@ -65,6 +83,9 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// Apply rate limiting to all API routes except webhooks
+app.use("/api/", apiLimiter);
 
 // Stripe webhook endpoint must use raw body, so register it before JSON parser
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || null;
@@ -135,7 +156,9 @@ app.post(
           case "checkout.session.async_payment_succeeded":
           case "checkout.session.async_payment_failed":
             // Invalidate charges and summary cache (subscriptions might be affected too)
-            console.log(`🔄 Invalidating cache due to ${type} event for account ${stripeAccountId}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔄 Invalidating cache due to ${type} event for account ${stripeAccountId}`);
+            }
             await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
             break;
           
@@ -146,7 +169,9 @@ app.post(
           case "invoice.payment_succeeded":
           case "invoice.payment_failed":
             // Invalidate subscriptions and summary cache
-            console.log(`🔄 Invalidating subscription cache due to ${type} event for account ${stripeAccountId}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`🔄 Invalidating subscription cache due to ${type} event for account ${stripeAccountId}`);
+            }
             await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
             break;
           
@@ -182,7 +207,7 @@ app.get("/health", (req, res) => {
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/setup", setupRoutes);
 app.use("/api/providers", providerRoutes);
@@ -340,7 +365,9 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
           userId: user._id,
           rangeDays: effectiveRange,
         });
-        console.log(`🔄 Force refresh requested - cleared cache for user ${user._id}, rangeDays: ${effectiveRange}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 Force refresh requested - cleared cache for user ${user._id}, rangeDays: ${effectiveRange}`);
+        }
       }
 
       // Check cache first (unless force refresh)
@@ -353,9 +380,11 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
         // If cache exists and is fresh, return it
         if (cachedData && cachedData.cachedAt) {
           const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
-          if (cacheAge < CACHE_TTL_MS) {
+        if (cacheAge < CACHE_TTL_MS) {
+          if (process.env.NODE_ENV === 'development') {
             console.log(`✅ Returning cached charges for user ${user._id}, rangeDays: ${effectiveRange}`);
-            return res.json({
+          }
+          return res.json({
               connected: true,
               charges: cachedData.charges,
               rangeDays: effectiveRange,
@@ -366,7 +395,9 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       }
 
       // Cache miss or stale - fetch from Stripe
-      console.log(`🔄 Fetching fresh charges from Stripe for user ${user._id}, rangeDays: ${effectiveRange}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 Fetching fresh charges from Stripe for user ${user._id}, rangeDays: ${effectiveRange}`);
+      }
       const nowSeconds = Math.floor(Date.now() / 1000);
       const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
 
@@ -421,7 +452,9 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
           rangeDays: parseInt(req.query.rangeDays, 10) || 30,
         });
         if (staleCache && staleCache.charges) {
-          console.log("⚠️ Returning stale cache due to Stripe API error");
+          if (process.env.NODE_ENV === 'development') {
+            console.log("⚠️ Returning stale cache due to Stripe API error");
+          }
           return res.json({
             connected: true,
             charges: staleCache.charges,
@@ -467,7 +500,9 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
         await StripeSubscriptionsCache.deleteMany({
           userId: user._id,
         });
-        console.log(`🔄 Force refresh requested - cleared subscriptions cache for user ${user._id}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 Force refresh requested - cleared subscriptions cache for user ${user._id}`);
+        }
       }
 
       // Check cache first (unless force refresh)
@@ -479,9 +514,11 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
         // If cache exists and is fresh, return it
         if (cachedData && cachedData.cachedAt) {
           const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
-          if (cacheAge < CACHE_TTL_MS) {
+        if (cacheAge < CACHE_TTL_MS) {
+          if (process.env.NODE_ENV === 'development') {
             console.log(`✅ Returning cached subscriptions for user ${user._id}`);
-            return res.json({
+          }
+          return res.json({
               connected: true,
               subscriptions: cachedData.subscriptions,
               cached: true,
@@ -491,7 +528,9 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
       }
 
       // Cache miss or stale - fetch from Stripe
-      console.log(`🔄 Fetching fresh subscriptions from Stripe for user ${user._id}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 Fetching fresh subscriptions from Stripe for user ${user._id}`);
+      }
       const subscriptions = await stripe.subscriptions.list(
         {
           limit: 20,
@@ -603,7 +642,9 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
           userId: user._id,
         });
         if (staleCache && staleCache.subscriptions) {
-          console.log("⚠️ Returning stale cache due to Stripe API error");
+          if (process.env.NODE_ENV === 'development') {
+            console.log("⚠️ Returning stale cache due to Stripe API error");
+          }
           return res.json({
             connected: true,
             subscriptions: staleCache.subscriptions,
@@ -659,7 +700,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
         rangeDays: effectiveRange,
         offsetDays: offsetDays,
       });
-      console.log(`🔄 Force refresh requested - cleared summary cache for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 Force refresh requested - cleared summary cache for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+      }
     }
 
     // Check cache first (unless force refresh)
@@ -674,7 +717,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       if (cachedData && cachedData.cachedAt) {
         const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
         if (cacheAge < CACHE_TTL_MS) {
-          console.log(`✅ Returning cached summary for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`✅ Returning cached summary for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+          }
           return res.json({
             connected: true,
             ...cachedData.summary,
@@ -687,7 +732,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     }
 
     // Cache miss or stale - fetch from Stripe
-    console.log(`🔄 Fetching fresh summary from Stripe for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 Fetching fresh summary from Stripe for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+    }
     const periodEnd = nowSeconds - offsetDays * 24 * 60 * 60;
     const periodStart = periodEnd - effectiveRange * 24 * 60 * 60;
 
@@ -760,7 +807,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
           offsetDays: offsetDays,
         });
         if (staleCache && staleCache.summary) {
-          console.log("⚠️ Returning stale cache due to Stripe API error");
+          if (process.env.NODE_ENV === 'development') {
+            console.log("⚠️ Returning stale cache due to Stripe API error");
+          }
           return res.json({
             connected: true,
             ...staleCache.summary,

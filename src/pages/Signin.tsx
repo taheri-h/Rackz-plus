@@ -73,6 +73,7 @@ const Signin: React.FC = () => {
                 id="email"
                 name="email"
                 required
+                maxLength={255}
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
@@ -99,6 +100,7 @@ const Signin: React.FC = () => {
                 id="password"
                 name="password"
                 required
+                maxLength={128}
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"

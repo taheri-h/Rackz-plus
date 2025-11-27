@@ -33,11 +33,28 @@ router.post('/signup', async (req, res) => {
     if (password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
+    if (password.length > 128) {
+      return res.status(400).json({ error: 'Password must be less than 128 characters' });
+    }
+    // Check for at least one uppercase, one lowercase, and one number
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      return res.status(400).json({ 
+        error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
+      });
+    }
 
-    // Sanitize inputs
-    const sanitizedEmail = email.toLowerCase().trim();
-    const sanitizedName = name.trim();
-    const sanitizedCompany = company ? company.trim() : null;
+    // Sanitize inputs with length limits
+    const sanitizedEmail = email.toLowerCase().trim().substring(0, 255);
+    const sanitizedName = name.trim().substring(0, 100);
+    const sanitizedCompany = company ? company.trim().substring(0, 100) : null;
+    
+    // Additional validation
+    if (sanitizedName.length < 2) {
+      return res.status(400).json({ error: 'Name must be at least 2 characters' });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: sanitizedEmail });

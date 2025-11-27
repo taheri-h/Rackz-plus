@@ -13,7 +13,6 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, getAuthToken } = useAuth();
-  const [paymentData, setPaymentData] = useState<any>(null);
   const [packageType, setPackageType] = useState<string>('');
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
   const [stripeAccount, setStripeAccount] = useState<any | null>(null);
@@ -24,12 +23,6 @@ const Dashboard: React.FC = () => {
   const [stripeSubscriptionsStatus, setStripeSubscriptionsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [stripeRangeDays, setStripeRangeDays] = useState<7 | 30 | 90 | 180 | 365>(30);
   const [stripeSummary, setStripeSummary] = useState<{
-    totalVolume: number;
-    currency: string | null;
-    totalCount: number;
-    failedCount: number;
-  } | null>(null);
-  const [stripePrevSummary, setStripePrevSummary] = useState<{
     totalVolume: number;
     currency: string | null;
     totalCount: number;
@@ -106,7 +99,6 @@ const Dashboard: React.FC = () => {
         const data = JSON.parse(stored);
         // Only use if it belongs to current user
         if (data.email === user.email && data.package) {
-          setPaymentData(data);
           foundPackage = data.package;
           // Save to localStorage for persistence
           localStorage.setItem(userPackageKey, data.package);
@@ -144,23 +136,30 @@ const Dashboard: React.FC = () => {
 
   // Load Stripe account data from backend for this user
   useEffect(() => {
-    console.log('🔍 Dashboard useEffect triggered, user:', user ? { id: user.id, email: user.email } : 'null');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Dashboard useEffect triggered, user:', user ? { id: user.id, email: user.email } : 'null');
+    }
     
     if (!user) {
-      console.log('❌ No user, skipping Stripe fetch');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ No user, skipping Stripe fetch');
+      }
       return;
     }
 
     const token = getAuthToken();
-    console.log('🔑 Auth token:', token ? 'exists' : 'missing');
     
     if (!token) {
-      console.log('❌ No auth token, skipping Stripe fetch');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ No auth token, skipping Stripe fetch');
+      }
       return;
     }
 
     const fetchStripeAccount = async () => {
-      console.log('🚀 Starting Stripe account fetch...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🚀 Starting Stripe account fetch...');
+      }
       try {
         setStripeStatus('loading');
         const response = await apiCall('/stripe/account', {
@@ -171,13 +170,17 @@ const Dashboard: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error('Stripe account fetch failed:', response.status, errorData);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Stripe account fetch failed:', response.status, errorData);
+          }
           setStripeStatus('error');
           return;
         }
 
         const data = await response.json();
-        console.log('Stripe account response:', data);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Stripe account response:', data);
+        }
 
         if (data.connected && data.account) {
           setStripeAccount(data.account);
@@ -193,11 +196,15 @@ const Dashboard: React.FC = () => {
           const userProvidersKey = `connectedProviders_${user.id}`;
           localStorage.setItem(userProvidersKey, JSON.stringify(updatedProviders));
         } else {
-          console.log('Stripe not connected for user:', data);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Stripe not connected for user:', data);
+          }
           setStripeStatus('not_connected');
         }
       } catch (error) {
-        console.error('Error loading Stripe account:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Stripe account:', error);
+        }
         setStripeStatus('error');
       }
     };
@@ -298,18 +305,11 @@ const Dashboard: React.FC = () => {
       try {
         setStripeSummaryStatus('loading');
 
-        const [currentRes, prevRes] = await Promise.all([
-          apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          }),
-          apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}&offsetDays=${stripeRangeDays}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          }),
-        ]);
+        const currentRes = await apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
         if (!currentRes.ok) {
           setStripeSummaryStatus('error');
@@ -323,18 +323,6 @@ const Dashboard: React.FC = () => {
           totalCount: currentData.totalCount || 0,
           failedCount: currentData.failedCount || 0,
         });
-
-        if (prevRes.ok) {
-          const prevData = await prevRes.json();
-          setStripePrevSummary({
-            totalVolume: prevData.totalVolume || 0,
-            currency: prevData.currency || null,
-            totalCount: prevData.totalCount || 0,
-            failedCount: prevData.failedCount || 0,
-          });
-        } else {
-          setStripePrevSummary(null);
-        }
 
         // Load failures summary for reasons & revenue at risk (7 or 30 days)
         try {
@@ -559,13 +547,15 @@ const Dashboard: React.FC = () => {
     };
   }, [stripeSummary]);
 
-  // Debug: Log current state
-  console.log('📊 Dashboard render state:', {
-    user: user ? { id: user.id, email: user.email, stripeAccountId: user.stripeAccountId } : null,
-    stripeStatus,
-    packageType,
-    connectedProviders,
-  });
+  // Debug: Log current state (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Dashboard render state:', {
+      user: user ? { id: user.id, email: user.email, stripeAccountId: user.stripeAccountId } : null,
+      stripeStatus,
+      packageType,
+      connectedProviders,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-white">

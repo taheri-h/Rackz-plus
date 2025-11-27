@@ -113,6 +113,18 @@ router.post('/reset', async (req, res) => {
     if (newPassword.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
+    if (newPassword.length > 128) {
+      return res.status(400).json({ error: 'Password must be less than 128 characters' });
+    }
+    // Check for at least one uppercase, one lowercase, and one number
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      return res.status(400).json({ 
+        error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' 
+      });
+    }
 
     // Find valid token
     const passwordReset = await PasswordReset.findValidToken(token);

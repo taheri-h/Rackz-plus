@@ -323,6 +323,8 @@ const Signup: React.FC = () => {
                 id="name"
                 name="name"
                 required
+                minLength={2}
+                maxLength={100}
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
@@ -341,6 +343,7 @@ const Signup: React.FC = () => {
                 id="email"
                 name="email"
                 required
+                maxLength={255}
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
@@ -360,13 +363,17 @@ const Signup: React.FC = () => {
                 name="password"
                 required
                 minLength={8}
+                maxLength={128}
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                placeholder="Minimum 8 characters"
+                placeholder="Min 8 chars: uppercase, lowercase, number"
                 aria-label="Password"
                 autoComplete="new-password"
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Must contain uppercase, lowercase, and number
+              </p>
             </div>
 
             <div>
@@ -377,6 +384,7 @@ const Signup: React.FC = () => {
                 type="text"
                 id="company"
                 name="company"
+                maxLength={100}
                 value={formData.company}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"

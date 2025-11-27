@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
   const [stripeChargesStatus, setStripeChargesStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [stripeSubscriptions, setStripeSubscriptions] = useState<any[]>([]);
   const [stripeSubscriptionsStatus, setStripeSubscriptionsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [stripeRangeDays, setStripeRangeDays] = useState<7 | 30 | 90 | 180 | 365>(30);
   const [stripeSummary, setStripeSummary] = useState<{
     totalVolume: number;
     currency: string | null;
@@ -28,6 +29,8 @@ const Dashboard: React.FC = () => {
     failedCount: number;
   } | null>(null);
   const [stripeSummaryStatus, setStripeSummaryStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [selectedCharge, setSelectedCharge] = useState<any | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<any | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -189,7 +192,7 @@ const Dashboard: React.FC = () => {
     const fetchCharges = async () => {
       try {
         setStripeChargesStatus('loading');
-        const response = await apiCall('/stripe/charges', {
+        const response = await apiCall(`/stripe/charges?rangeDays=${stripeRangeDays}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -217,7 +220,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchCharges();
-  }, [user, getAuthToken]);
+  }, [user, getAuthToken, stripeRangeDays]);
 
   // Load Stripe subscriptions for this user
   useEffect(() => {
@@ -269,7 +272,7 @@ const Dashboard: React.FC = () => {
     const fetchSummary = async () => {
       try {
         setStripeSummaryStatus('loading');
-        const response = await apiCall('/stripe/summary', {
+        const response = await apiCall(`/stripe/summary?rangeDays=${stripeRangeDays}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -297,7 +300,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchSummary();
-  }, [user, getAuthToken]);
+  }, [user, getAuthToken, stripeRangeDays]);
 
   const providers = [
     { id: 'stripe', name: 'Stripe', logo: '/images/brands/stripe-logo-AQEyPRPODaTM3Ern.png.avif' },
@@ -392,35 +395,64 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Stripe Summary Cards */}
-        {stripeStatus === 'connected' && stripeSummaryStatus === 'loaded' && stripeSummary && (
-          <div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card p-4">
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                Volume (last 30 days)
+        {/* Stripe Summary Cards + Range Filter */}
+        {stripeStatus === 'connected' && (
+          <div className="mb-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Stripe Performance</h2>
+                <p className="text-xs text-slate-500">
+                  Key metrics for your connected Stripe account.
+                </p>
               </div>
-              <div className="text-2xl font-semibold text-slate-900">
-                {stripeSummary.totalVolume
-                  ? `${(stripeSummary.totalVolume / 100).toFixed(2)} ${(stripeSummary.currency || '').toUpperCase()}`
-                  : '0.00'}
-              </div>
-            </div>
-            <div className="card p-4">
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                Payments
-              </div>
-              <div className="text-2xl font-semibold text-slate-900">
-                {stripeSummary.totalCount}
-              </div>
-            </div>
-            <div className="card p-4">
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                Failed Payments
-              </div>
-              <div className="text-2xl font-semibold text-slate-900">
-                {stripeSummary.failedCount}
+              <div className="inline-flex items-center gap-1 rounded-xl bg-slate-50 p-1">
+                {([7, 30, 90, 180, 365] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setStripeRangeDays(days)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                      stripeRangeDays === days
+                        ? 'bg-slate-900 text-white'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {days === 365 ? 'Last 12m' : days === 180 ? 'Last 6m' : `Last ${days}d`}
+                  </button>
+                ))}
               </div>
             </div>
+
+            {stripeSummaryStatus === 'loaded' && stripeSummary && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="card p-4">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                    Volume (last {stripeRangeDays} days)
+                  </div>
+                  <div className="text-2xl font-semibold text-slate-900">
+                    {stripeSummary.totalVolume
+                      ? `${(stripeSummary.totalVolume / 100).toFixed(2)} ${(stripeSummary.currency || '').toUpperCase()}`
+                      : '0.00'}
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                    Payments
+                  </div>
+                  <div className="text-2xl font-semibold text-slate-900">
+                    {stripeSummary.totalCount}
+                  </div>
+                </div>
+                <div className="card p-4">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                    Failed Payments
+                  </div>
+                  <div className="text-2xl font-semibold text-slate-900">
+                    {stripeSummary.failedCount}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {/* Connect Payment Providers Section - Show for all plans */}
@@ -543,16 +575,19 @@ const Dashboard: React.FC = () => {
 
                       return (
                         <tr key={charge.id} className="border-t border-slate-100">
-                          <td className="px-4 py-2 text-slate-700">
+                          <td
+                            className="px-4 py-2 text-slate-700 cursor-pointer hover:bg-slate-50"
+                            onClick={() => setSelectedCharge(charge)}
+                          >
                             {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </td>
-                          <td className="px-4 py-2 text-slate-900 font-medium">
+                          <td className="px-4 py-2 text-slate-900 font-medium cursor-pointer hover:bg-slate-50" onClick={() => setSelectedCharge(charge)}>
                             {amount} {currency}
                           </td>
-                          <td className="px-4 py-2 text-slate-600">
+                          <td className="px-4 py-2 text-slate-600 cursor-pointer hover:bg-slate-50" onClick={() => setSelectedCharge(charge)}>
                             {charge.customer || '—'}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 cursor-pointer hover:bg-slate-50" onClick={() => setSelectedCharge(charge)}>
                             <span
                               className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                                 isSuccess
@@ -611,7 +646,11 @@ const Dashboard: React.FC = () => {
                           'Payment did not succeed';
 
                         return (
-                          <tr key={charge.id} className="border-t border-amber-100">
+                          <tr
+                            key={charge.id}
+                            className="border-t border-amber-100 cursor-pointer hover:bg-amber-50/80"
+                            onClick={() => setSelectedCharge(charge)}
+                          >
                             <td className="px-4 py-2 text-amber-900">
                               {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
@@ -688,7 +727,11 @@ const Dashboard: React.FC = () => {
                           : 'bg-slate-50 text-slate-700 border border-slate-200';
 
                       return (
-                        <tr key={sub.id} className="border-t border-slate-100">
+                        <tr
+                          key={sub.id}
+                          className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
+                          onClick={() => setSelectedSubscription(sub)}
+                        >
                           <td className="px-4 py-2 text-slate-700">
                             {sub.customerName || sub.customerEmail || sub.customerId || '—'}
                           </td>
@@ -715,6 +758,117 @@ const Dashboard: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Charge detail modal */}
+        {selectedCharge && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Charge details</div>
+                  <div className="text-xs text-slate-500 truncate">{selectedCharge.id}</div>
+                </div>
+                <button
+                  className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+                  onClick={() => setSelectedCharge(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="px-5 py-4 space-y-3 overflow-y-auto text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Amount</span>
+                  <span className="font-medium text-slate-900">
+                    {(selectedCharge.amount / 100).toFixed(2)}{' '}
+                    {(selectedCharge.currency || '').toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Status</span>
+                  <span className="font-medium text-slate-900">
+                    {selectedCharge.paid && selectedCharge.status === 'succeeded'
+                      ? 'Succeeded'
+                      : 'Failed'}
+                  </span>
+                </div>
+                {selectedCharge.customer && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Customer</span>
+                    <span className="text-slate-900">{selectedCharge.customer}</span>
+                  </div>
+                )}
+                {selectedCharge.failure_message && (
+                  <div>
+                    <div className="text-slate-500 mb-1">Failure reason</div>
+                    <div className="text-red-600 text-xs">{selectedCharge.failure_message}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-slate-500 mb-1 text-xs">Raw data</div>
+                  <pre className="text-[11px] bg-slate-50 rounded-lg p-2 overflow-x-auto">
+                    {JSON.stringify(selectedCharge, null, 2)}
+                  </pre>
+                </div>
+                <a
+                  href={`https://dashboard.stripe.com/${process.env.NODE_ENV === 'production' ? '' : 'test/'}payments/${selectedCharge.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center mt-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800"
+                >
+                  Open in Stripe
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Subscription detail modal */}
+        {selectedSubscription && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Subscription details</div>
+                  <div className="text-xs text-slate-500 truncate">{selectedSubscription.id}</div>
+                </div>
+                <button
+                  className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+                  onClick={() => setSelectedSubscription(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="px-5 py-4 space-y-3 overflow-y-auto text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-slate-500">Status</span>
+                  <span className="font-medium text-slate-900">{selectedSubscription.status}</span>
+                </div>
+                {selectedSubscription.customerName && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-slate-500">Customer</span>
+                    <span className="text-slate-900">
+                      {selectedSubscription.customerName || selectedSubscription.customerEmail}
+                    </span>
+                  </div>
+                )}
+                <div>
+                  <div className="text-slate-500 mb-1 text-xs">Raw data</div>
+                  <pre className="text-[11px] bg-slate-50 rounded-lg p-2 overflow-x-auto">
+                    {JSON.stringify(selectedSubscription, null, 2)}
+                  </pre>
+                </div>
+                <a
+                  href={`https://dashboard.stripe.com/${process.env.NODE_ENV === 'production' ? '' : 'test/'}subscriptions/${selectedSubscription.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center mt-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800"
+                >
+                  Open in Stripe
+                </a>
+              </div>
+            </div>
           </div>
         )}
 

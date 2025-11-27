@@ -211,9 +211,21 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
     }
 
     try {
+      // Optional time range filter (days). Defaults to 30 if not provided.
+      const rangeDays = parseInt(req.query.rangeDays, 10);
+      const allowedRanges = [7, 30, 90, 180, 365];
+      const effectiveRange =
+        !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 30;
+
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
+
       const charges = await stripe.charges.list(
         {
           limit: 20,
+          created: {
+            gte: sinceSeconds,
+          },
         },
         {
           stripeAccount: user.stripeAccountId,
@@ -237,6 +249,7 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       return res.json({
         connected: true,
         charges: mapped,
+        rangeDays: effectiveRange,
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe charges:", stripeErr);
@@ -374,14 +387,18 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     }
 
     const nowSeconds = Math.floor(Date.now() / 1000);
-    const thirtyDaysAgo = nowSeconds - 30 * 24 * 60 * 60;
+    const rangeDays = parseInt(req.query.rangeDays, 10);
+    const allowedRanges = [7, 30, 90, 180, 365];
+    const effectiveRange =
+      !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 30;
+    const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
 
     try {
       const charges = await stripe.charges.list(
         {
           limit: 100,
           created: {
-            gte: thirtyDaysAgo,
+            gte: sinceSeconds,
           },
         },
         {
@@ -408,8 +425,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
         currency: charges.data[0]?.currency || null,
         totalCount,
         failedCount,
-        periodStart: thirtyDaysAgo,
+        periodStart: sinceSeconds,
         periodEnd: nowSeconds,
+        rangeDays: effectiveRange,
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe summary:", stripeErr);

@@ -91,6 +91,8 @@
           "renewals",
           "payouts",
           "KYC status",
+          "fraud signals",
+          "webhooks",
           "disputes"
         ]
       },
@@ -103,7 +105,8 @@
           "failed renewals",
           "webhook/API failures",
           "payout & KYC problems",
-          "chargebacks & fraud signals"
+          "chargebacks",
+          "mobile/Safari-specific failures"
         ]
       },
       {
@@ -119,7 +122,7 @@
         ]
       }
     ],
-    "noDevelopers": "No developers. No guesswork. No digging through logs."
+    "noDevelopers": "No developers. No guesswork. No logs."
   },
   "hero": {
     "title": "Stop losing revenue to silent payment failures.",
@@ -130,62 +133,72 @@
     "trustedFor": "Trusted for: Stripe · PayPal · Shopify · Apple Pay · Google Pay · Adyen"
   },
   "services": {
-    "title": "Features",
+    "title": "The payment reliability platform that catches what Stripe misses.",
     "features": [
       {
         "icon": "",
         "title": "Payment Health Score",
-        "description": "A daily 0–100 score showing the reliability of your entire payment system."
+        "description": "A daily 0–100 score that shows how healthy your entire payment system is.",
+        "items": [
+          "combines checkouts, renewals, payouts, and disputes",
+          "highlights risk before revenue drops",
+          "tracks trends over time",
+          "simple green / yellow / red status"
+        ]
       },
       {
         "icon": "",
         "title": "Checkout Error Monitoring",
-        "description": "Automatically detects hidden issues such as:",
+        "description": "Finds hidden checkout issues before customers get stuck or drop off.",
         "items": [
-          "API key errors",
-          "CORS issues",
-          "Plugin conflicts",
-          "Missing domain verification",
-          "Apple/Google Pay misconfiguration"
+          "detects API key and CORS errors",
+          "spots plugin and theme conflicts",
+          "checks domain and Apple/Google Pay setup",
+          "flags device and browser-specific failures (e.g. Safari/mobile)"
         ]
       },
       {
         "icon": "",
         "title": "Subscription & Renewal Monitoring",
-        "description": "Stay ahead of subscription churn with alerts for:",
+        "description": "Keeps your recurring revenue safe from avoidable subscription failures.",
         "items": [
-          "upcoming card expirations",
-          "failed renewal attempts",
-          "dunning issues",
-          "high-risk customers"
+          "alerts on upcoming card expirations",
+          "flags failed or stalled renewals",
+          "surfaces weak dunning performance",
+          "identifies high-risk customers before they churn"
         ]
       },
       {
         "icon": "",
         "title": "Payout & Vendor Monitoring (Stripe Connect)",
-        "description": "Monitor the backbone of your marketplace or multi-vendor setup:",
+        "description": "Protects your marketplace from silent payout and vendor issues.",
         "items": [
-          "delayed or stuck payouts",
-          "missing or failed KYC",
-          "restricted accounts",
-          "transfer failures"
+          "detects delayed or stuck payouts",
+          "monitors missing or failed KYC",
+          "alerts on restricted or frozen accounts",
+          "flags transfer and routing failures"
         ]
       },
       {
         "icon": "",
         "title": "Chargeback Watch",
-        "description": "Instant dispute alerts with a recommended evidence checklist."
+        "description": "Gives you a fighting chance on every dispute, automatically.",
+        "items": [
+          "instant alerts for new chargebacks",
+          "recommended evidence checklist",
+          "links to the exact dispute in Stripe",
+          "helps reduce write-offs and surprises"
+        ]
       },
       {
         "icon": "",
         "title": "AI Payment Agent",
-        "description": "Explains in simple language:",
+        "description": "Turns raw payment errors into clear, human-readable actions.",
         "items": [
-          "what broke",
-          "why it happened",
-          "severity",
-          "how to fix it",
-          "direct link to the Stripe/PayPal screen"
+          "explains what broke and where",
+          "describes why it happened and severity",
+          "suggests the fastest fix step-by-step",
+          "deep-links to the right Stripe/PayPal screen"
         ]
       }
     ],
@@ -239,14 +252,14 @@
     }
   },
   "pricing": {
-    "title": "Choose Your Plan",
-    "subtitle": "Unlock the power of an entire sales and marketing department with one person",
+    "title": "Simple plans for serious revenue protection.",
+    "subtitle": "",
     "monthly": "Monthly",
     "yearly": "Yearly",
     "discount": "Get Up to 34% Discount",
     "guarantee": {
       "title": "30-Day Money Back Guarantee",
-      "description": "Try it risk-free! If you're not completely satisfied, we'll refund your purchase - no questions asked."
+      "description": "Try Rackz risk-free. If you're not satisfied, we'll refund you — no questions asked."
     },
     "mostPopular": "Most Popular",
     "plans": [
@@ -254,8 +267,8 @@
         "icon": "",
         "name": "Starter",
         "price": "$29",
-        "description": "For creators, coaches, small e-commerce.",
-        "for": "For creators, coaches, small e-commerce.",
+        "description": "For creators, coaches, and small e-commerce.",
+        "for": "For creators, coaches, and small e-commerce.",
         "features": [
           "Payment Health Score",
           "Failed payment alerts",

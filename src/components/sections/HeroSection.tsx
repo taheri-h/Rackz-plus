@@ -10,29 +10,24 @@ const HeroSection: React.FC = () => {
     <section className="py-24 bg-white">
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto">
-          <h1 className="text-6xl md:text-7xl font-semibold text-slate-900 mb-8 leading-tight tracking-tight min-h-[1.2em]">
-            <TypingEffect 
-              text={t('hero.title')} 
-              speed={150}
-              loopDelay={10000}
-              className="inline-block"
-            />
+          <h1 className="text-4xl md:text-6xl font-semibold text-slate-900 mb-6 leading-tight tracking-tight">
+            Stop losing revenue to silent payment failures.
           </h1>
           <p className="text-xl text-slate-600 leading-relaxed mb-6 max-w-2xl mx-auto">
-            {t('hero.subtitle')}
+            Rackz monitors your Stripe & PayPal checkouts, renewals, and payouts 24/7 — and alerts you before customers complain.
           </p>
           <p className="text-lg text-slate-500 mb-12 max-w-2xl mx-auto">
-            {t('hero.subtitle2')}
+            Instant alerts. Clear fixes. Accept payments reliably in days, not weeks.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
             <a 
               href="#pricing" 
               className="button-primary"
-              onClick={() => trackButtonClick('Start now', 'Hero Section')}
-              aria-label="Start now - View Pricing"
+              onClick={() => trackButtonClick('Start Monitoring', 'Hero Section')}
+              aria-label="Start Monitoring - View Pricing"
             >
-              {t('hero.startFreeTrial')}
+              Start Monitoring
             </a>
             <a 
               href="https://calendly.com/fynteq/30min" 
@@ -42,7 +37,7 @@ const HeroSection: React.FC = () => {
               onClick={() => trackConsultationClick('Hero CTA')}
               aria-label="Book a consultation call"
             >
-              {t('hero.bookCall')}
+              Book a Call
             </a>
           </div>
 

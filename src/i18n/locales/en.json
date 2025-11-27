@@ -72,7 +72,7 @@
     "conclusion": "Rackz Pulse monitors all of this for you, automatically."
   },
   "process": {
-    "title": "How It Works",
+    "title": "See what is breaking and fix it fast.",
     "subtitle": "",
     "steps": [
       {
@@ -126,14 +126,14 @@
   },
   "hero": {
     "title": "Stop losing revenue to silent payment failures.",
-    "subtitle": "Rackz Pulse monitors your Stripe & PayPal checkouts, subscriptions, renewals, and payouts 24/7 and alerts you before customers complain.",
-    "subtitle2": "Instant alerts. Clear fixes. Start accepting payments reliably in days, not weeks.",
+    "subtitle": "Rackz monitors your Stripe and PayPal checkouts, renewals, and payouts 24/7 and alerts you before customers complain.",
+    "subtitle2": "Instant alerts. Clear fixes. Reliable payments in days, not weeks.",
     "startFreeTrial": "Start now",
     "bookCall": "Book a Call",
     "trustedFor": "Trusted for: Stripe · PayPal · Shopify · Apple Pay · Google Pay · Adyen"
   },
   "services": {
-    "title": "The payment reliability platform that catches what Stripe misses.",
+    "title": "The payment reliability platform Stripe never built.",
     "features": [
       {
         "icon": "",

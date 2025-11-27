@@ -8,7 +8,7 @@ const PainPointsSection: React.FC = () => {
         {/* PAIN SECTION — WHY FOUNDERS NEED RACKZ */}
         <div className="mb-16">
           <h2 className="text-4xl md:text-5xl font-semibold text-slate-900 mb-3 leading-tight tracking-tight">
-            Payments break silently. You only notice when revenue drops.
+            Payments fail silently and it’s costing you real money.
           </h2>
         </div>
 
@@ -20,7 +20,7 @@ const PainPointsSection: React.FC = () => {
           <ul className="space-y-3 text-base text-slate-700">
             <li className="flex items-baseline gap-4">
               <span className="text-2xl font-semibold text-slate-900 min-w-[96px]">4–8%</span>
-              <span className="text-slate-700">of payments fail silently.</span>
+              <span className="text-slate-700">of payments fail without warning.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="text-2xl font-semibold text-slate-900 min-w-[96px]">15–30%</span>
@@ -28,19 +28,19 @@ const PainPointsSection: React.FC = () => {
             </li>
             <li className="flex items-baseline gap-4">
               <span className="text-2xl font-semibold text-slate-900 min-w-[96px]">1 in 20</span>
-              <span className="text-slate-700">checkouts fail due to integration issues.</span>
+              <span className="text-slate-700">checkouts break due to integration issues.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="text-lg font-semibold text-slate-900 min-w-[96px]">Payouts</span>
-              <span className="text-slate-700">stall because of KYC restrictions.</span>
+              <span className="text-slate-700">stall from KYC restrictions.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="text-lg font-semibold text-slate-900 min-w-[96px]">Webhooks</span>
-              <span className="text-slate-700">fail without warning.</span>
+              <span className="text-slate-700">fail without alerts.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="text-lg font-semibold text-slate-900 min-w-[96px]">Apple/Google Pay</span>
-              <span className="text-slate-700">break silently.</span>
+              <span className="text-slate-700">break quietly in the background.</span>
             </li>
           </ul>
         </div>
@@ -53,15 +53,15 @@ const PainPointsSection: React.FC = () => {
           <ul className="space-y-2 text-base text-slate-700">
             <li className="flex items-baseline gap-4">
               <span className="font-semibold text-slate-900 min-w-[140px]">You lose revenue</span>
-              <span className="text-slate-700">on payments that should have succeeded.</span>
+              <span className="text-slate-700">you should have earned.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="font-semibold text-slate-900 min-w-[140px]">You don’t know why</span>
-              <span className="text-slate-700">MRR, LTV, or cash flow suddenly dip.</span>
+              <span className="text-slate-700">MRR suddenly dips.</span>
             </li>
             <li className="flex items-baseline gap-4">
               <span className="font-semibold text-slate-900 min-w-[140px]">You find out too late</span>
-              <span className="text-slate-700">when customers complain or churn shows up in reports.</span>
+              <span className="text-slate-700">when customers complain or churn appears in reports.</span>
             </li>
           </ul>
         </div>

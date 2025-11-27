@@ -7,28 +7,28 @@ const FAQ_ITEMS: Array<{ question: string; answer: string }> = [
       answer: 'No. Rackz has read-only access. No card numbers or sensitive data.'
     },
     {
-      question: 'Will Pulse break my current checkout?',
-      answer: 'No. Rackz is non-invasive and uses OAuth. Your checkout stays unchanged.'
+      question: 'Will Rackz change or break my checkout?',
+      answer: 'No. Rackz is non-invasive and your checkout flow stays the same.'
     },
     {
-      question: 'Do I need a developer to use Pulse?',
-      answer: 'No. Anyone can set it up in under a minute.'
+      question: 'Do I need a developer to set this up?',
+      answer: 'No. Setup takes less than a minute.'
     },
     {
-      question: 'Does Pulse work with Shopify?',
-      answer: 'Yes. Rackz monitors Shopify + Stripe + PayPal checkouts.'
+      question: 'Does Rackz work with Shopify?',
+      answer: 'Yes. Rackz monitors Shopify, Stripe, and PayPal together.'
     },
     {
-      question: 'Can Pulse fix issues automatically?',
-      answer: 'Pulse provides exact fixes with direct links. Automation is coming soon.'
+      question: 'Can Rackz fix issues automatically?',
+      answer: 'Rackz gives you the exact fix and the right link. Full automation is on the roadmap.'
     },
     {
       question: 'Is my data secure?',
-      answer: 'Yes — SOC2, encrypted, read-only, disconnect anytime.'
+      answer: 'Yes. We follow strict security practices, encrypt data, and use read-only access. You can disconnect at any time.'
     },
     {
       question: 'Do you support Stripe Connect for marketplaces?',
-      answer: 'Yes — we monitor payouts, KYC, and vendor issues 24/7.'
+      answer: 'Yes. Rackz monitors payouts, vendor status, and KYC issues for Stripe Connect.'
     }
   ];
 

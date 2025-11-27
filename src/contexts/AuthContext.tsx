@@ -6,6 +6,7 @@ interface User {
   email: string;
   name: string;
   company?: string;
+  stripeAccountId?: string | null;
   entitlements?: {
     saasPlan?: string | null;
     setupEligible?: boolean;
@@ -124,6 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: data.user.name,
         entitlements: data.user.entitlements,
         company, // Store company separately if needed
+        stripeAccountId: data.user.stripeAccountId,
       };
       
       localStorage.setItem('authUser', JSON.stringify(newUser));
@@ -167,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: data.user.email,
         name: data.user.name,
         entitlements: data.user.entitlements,
+        stripeAccountId: data.user.stripeAccountId,
       };
       
       localStorage.setItem('authUser', JSON.stringify(userData));

@@ -4,6 +4,9 @@ const cors = require("cors");
 const crypto = require("crypto");
 const Stripe = require("stripe");
 const connectDB = require("./config/database");
+const auth = require("./middleware/auth");
+const User = require("./models/User");
+const ConnectedProvider = require("./models/ConnectedProvider");
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -20,8 +23,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-// Simple in-memory state store (sufficient for development)
-const validStates = new Set();
+// Simple in-memory state store mapping state -> userId (sufficient for development)
+const validStates = new Map();
 
 // Connect to MongoDB
 connectDB();
@@ -76,11 +79,12 @@ app.use("/api/password-reset", passwordResetRoutes);
 
 // ========== STRIPE CONNECT ROUTES ==========
 
-// 1) Get Stripe Connect URL
-app.get("/api/stripe/connect-url", (req, res) => {
+// 1) Get Stripe Connect URL (requires authenticated user)
+app.get("/api/stripe/connect-url", auth, (req, res) => {
   try {
     const state = crypto.randomBytes(16).toString("hex");
-    validStates.add(state);
+    // Associate this state with the current user
+    validStates.set(state, req.user._id.toString());
 
     const params = new URLSearchParams({
       response_type: "code",
@@ -108,7 +112,8 @@ app.get("/api/stripe/callback", async (req, res) => {
   }
 
   const stateStr = state.toString();
-  if (!validStates.has(stateStr)) {
+  const userId = validStates.get(stateStr);
+  if (!userId) {
     return res.status(400).send("Invalid state");
   }
   validStates.delete(stateStr);
@@ -125,16 +130,124 @@ app.get("/api/stripe/callback", async (req, res) => {
     console.log("✅ Connected Stripe account:", connectedAccountId);
     console.log("scope:", scope);
 
-    // TODO: Persist connectedAccountId (and other details) to your DB with the current user
+    // Persist connectedAccountId (and other details) to your DB with the current user
+    if (userId && connectedAccountId) {
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+          user.stripeAccountId = connectedAccountId;
+          await user.save();
+        }
 
-    res.send(
-      "Stripe connected successfully. Check server logs for the connected acct_ id."
-    );
-    // Or alternatively:
-    // res.redirect(`${process.env.APP_URL}/some-frontend-page`);
+        // Upsert ConnectedProvider document for Stripe
+        await ConnectedProvider.findOneAndUpdate(
+          { userId, provider: "stripe" },
+          {
+            userId,
+            provider: "stripe",
+            status: "connected",
+            metadata: {
+              stripeAccountId: connectedAccountId,
+              scope,
+            },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      } catch (dbErr) {
+        console.error("Error saving Stripe account to user:", dbErr);
+      }
+    }
+
+    // After successful connection, redirect back to the frontend dashboard
+    const frontendBase =
+      process.env.FRONTEND_URL || "http://localhost:3000";
+
+    // You can read this flag on the frontend (e.g. from query params) to show a success toast
+    const redirectUrl = `${frontendBase}/dashboard?stripeConnected=1`;
+
+    return res.redirect(302, redirectUrl);
   } catch (err) {
     console.error("Stripe OAuth error:", err);
     res.status(500).send("Stripe OAuth failed");
+  }
+});
+
+// 3) Get basic Stripe account data for the authenticated user
+app.get("/api/stripe/account", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.json({ connected: false });
+    }
+
+    try {
+      const account = await stripe.accounts.retrieve(user.stripeAccountId);
+      return res.json({
+        connected: true,
+        account,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe account:", stripeErr);
+      return res.status(500).json({
+        connected: false,
+        error: "Failed to fetch Stripe account",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe account route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 4) Get recent Stripe charges for the authenticated user's connected account
+app.get("/api/stripe/charges", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    try {
+      const charges = await stripe.charges.list(
+        {
+          limit: 20,
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      // Map to a lighter payload for the frontend
+      const mapped = charges.data.map((charge) => ({
+        id: charge.id,
+        amount: charge.amount,
+        currency: charge.currency,
+        status: charge.status,
+        created: charge.created,
+        description: charge.description,
+        customer: charge.billing_details?.email || charge.receipt_email || null,
+        paid: charge.paid,
+        failure_code: charge.failure_code || null,
+        failure_message: charge.failure_message || null,
+      }));
+
+      return res.json({
+        connected: true,
+        charges: mapped,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe charges:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch Stripe charges",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe charges route error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

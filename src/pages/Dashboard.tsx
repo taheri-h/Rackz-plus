@@ -11,10 +11,14 @@ import ConnectStripeButton from '../components/ConnectStripeButton';
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, getAuthToken } = useAuth();
   const [paymentData, setPaymentData] = useState<any>(null);
   const [packageType, setPackageType] = useState<string>('');
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
+  const [stripeAccount, setStripeAccount] = useState<any | null>(null);
+  const [stripeStatus, setStripeStatus] = useState<'idle' | 'loading' | 'connected' | 'not_connected' | 'error'>('idle');
+  const [stripeCharges, setStripeCharges] = useState<any[]>([]);
+  const [stripeChargesStatus, setStripeChargesStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   useEffect(() => {
     if (!user) return;
@@ -113,6 +117,98 @@ const Dashboard: React.FC = () => {
       setConnectedProviders(JSON.parse(savedProviders));
     }
   }, [user]);
+
+  // Load Stripe account data from backend for this user
+  useEffect(() => {
+    if (!user) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const fetchStripeAccount = async () => {
+      try {
+        setStripeStatus('loading');
+        const response = await apiCall('/stripe/account', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          setStripeStatus('error');
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.connected && data.account) {
+          setStripeAccount(data.account);
+          setStripeStatus('connected');
+
+          // Ensure 'stripe' is marked as connected in local state & storage
+          const updatedProviders = connectedProviders.includes('stripe')
+            ? connectedProviders
+            : [...connectedProviders, 'stripe'];
+
+          setConnectedProviders(updatedProviders);
+
+          const userProvidersKey = `connectedProviders_${user.id}`;
+          localStorage.setItem(userProvidersKey, JSON.stringify(updatedProviders));
+        } else {
+          setStripeStatus('not_connected');
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Stripe account:', error);
+        }
+        setStripeStatus('error');
+      }
+    };
+
+    fetchStripeAccount();
+    // We intentionally exclude connectedProviders from deps to avoid loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, getAuthToken]);
+
+  // Load recent Stripe charges for this user
+  useEffect(() => {
+    if (!user) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const fetchCharges = async () => {
+      try {
+        setStripeChargesStatus('loading');
+        const response = await apiCall('/stripe/charges', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          setStripeChargesStatus('error');
+          return;
+        }
+
+        const data = await response.json();
+        if (data.charges && Array.isArray(data.charges)) {
+          setStripeCharges(data.charges);
+          setStripeChargesStatus('loaded');
+        } else {
+          setStripeCharges([]);
+          setStripeChargesStatus('loaded');
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Stripe charges:', error);
+        }
+        setStripeChargesStatus('error');
+      }
+    };
+
+    fetchCharges();
+  }, [user, getAuthToken]);
 
   const providers = [
     { id: 'stripe', name: 'Stripe', logo: '/images/brands/stripe-logo-AQEyPRPODaTM3Ern.png.avif' },
@@ -239,7 +335,14 @@ const Dashboard: React.FC = () => {
                     )}
                     <h3 className="font-semibold text-slate-900 mb-1">{provider.name}</h3>
                     {isConnected && (
-                      <span className="text-xs text-slate-600 font-medium">Connected</span>
+                      <div className="space-y-1">
+                        <span className="text-xs text-slate-600 font-medium">Connected</span>
+                        {provider.id === 'stripe' && stripeStatus === 'connected' && stripeAccount && (
+                          <div className="text-[11px] text-slate-500">
+                            {stripeAccount.business_profile?.name || stripeAccount.email || stripeAccount.id}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -286,6 +389,69 @@ const Dashboard: React.FC = () => {
             })}
           </div>
         </div>
+
+        {/* Recent Stripe Payments */}
+        {stripeStatus === 'connected' && (
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Recent Stripe Payments</h2>
+            {stripeChargesStatus === 'loading' && (
+              <p className="text-sm text-slate-500">Loading recent payments...</p>
+            )}
+            {stripeChargesStatus === 'error' && (
+              <p className="text-sm text-red-500">Could not load Stripe payments.</p>
+            )}
+            {stripeChargesStatus === 'loaded' && stripeCharges.length === 0 && (
+              <p className="text-sm text-slate-500">No recent payments found.</p>
+            )}
+            {stripeChargesStatus === 'loaded' && stripeCharges.length > 0 && (
+              <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Amount</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Customer</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stripeCharges.map((charge) => {
+                      const date = new Date(charge.created * 1000);
+                      const amount = (charge.amount / 100).toFixed(2);
+                      const currency = (charge.currency || '').toUpperCase();
+                      const isSuccess = charge.paid && charge.status === 'succeeded';
+
+                      return (
+                        <tr key={charge.id} className="border-t border-slate-100">
+                          <td className="px-4 py-2 text-slate-700">
+                            {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="px-4 py-2 text-slate-900 font-medium">
+                            {amount} {currency}
+                          </td>
+                          <td className="px-4 py-2 text-slate-600">
+                            {charge.customer || '—'}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                                isSuccess
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : 'bg-red-50 text-red-700 border border-red-200'
+                              }`}
+                            >
+                              {isSuccess ? 'Succeeded' : 'Failed'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Show appropriate dashboard based on plan */}
         {packageType && (

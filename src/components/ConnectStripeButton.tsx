@@ -14,9 +14,17 @@ const ConnectStripeButton: React.FC<ConnectStripeButtonProps> = ({
     try {
       setLoading(true);
 
+      const token = sessionStorage.getItem('authToken');
+
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_URL}/stripe/connect-url`, {
         method: 'GET',
         credentials: 'include',
+        headers,
       });
 
       const data = await res.json();

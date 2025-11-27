@@ -27,6 +27,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  // Stripe Connect account linked to this user (acct_xxx)
+  stripeAccountId: {
+    type: String,
+    default: null,
+    index: true,
+  },
   entitlements: {
     saasPlan: {
       type: String,

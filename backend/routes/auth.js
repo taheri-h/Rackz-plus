@@ -67,6 +67,7 @@ router.post('/signup', async (req, res) => {
         name: user.name,
         company: user.company,
         entitlements: user.entitlements,
+        stripeAccountId: user.stripeAccountId,
       },
     });
   } catch (error) {
@@ -113,6 +114,7 @@ router.post('/signin', async (req, res) => {
         email: user.email,
         name: user.name,
         entitlements: user.entitlements,
+        stripeAccountId: user.stripeAccountId,
       },
     });
   } catch (error) {
@@ -132,6 +134,7 @@ router.get('/me', auth, async (req, res) => {
         email: req.user.email,
         name: req.user.name,
         entitlements: req.user.entitlements,
+        stripeAccountId: req.user.stripeAccountId,
       },
     });
   } catch (error) {

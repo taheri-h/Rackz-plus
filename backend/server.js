@@ -6,10 +6,18 @@ const Stripe = require("stripe");
 const connectDB = require("./config/database");
 const { getRecentPayments } = require("./utils/stripePayments");
 const { sendAlertEmail } = require("./utils/email");
+const {
+  invalidateUserStripeCache,
+  invalidateStripeAccountCache,
+  invalidateSpecificCache,
+} = require("./utils/cacheInvalidation");
 const auth = require("./middleware/auth");
 const User = require("./models/User");
 const ConnectedProvider = require("./models/ConnectedProvider");
 const WebhookEvent = require("./models/WebhookEvent");
+const StripeChargesCache = require("./models/StripeChargesCache");
+const StripeSubscriptionsCache = require("./models/StripeSubscriptionsCache");
+const StripeSummaryCache = require("./models/StripeSummaryCache");
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -109,17 +117,43 @@ app.post(
         status: "received",
       });
 
-      // Basic routing for important events – can be expanded later
-      switch (type) {
-        case "payment_intent.succeeded":
-        case "payment_intent.payment_failed":
-        case "charge.failed":
-        case "checkout.session.completed":
-        case "checkout.session.expired":
-          // For now we just store the event; later we can update aggregates or trigger alerts
-          break;
-        default:
-          break;
+      // Basic routing for important events – invalidate cache when transactions change
+      const stripeAccountId = account || null;
+      
+      if (stripeAccountId) {
+        // Invalidate cache for this Stripe account when relevant events occur
+        switch (type) {
+          case "payment_intent.succeeded":
+          case "payment_intent.payment_failed":
+          case "payment_intent.canceled":
+          case "charge.succeeded":
+          case "charge.failed":
+          case "charge.refunded":
+          case "charge.updated":
+          case "checkout.session.completed":
+          case "checkout.session.expired":
+          case "checkout.session.async_payment_succeeded":
+          case "checkout.session.async_payment_failed":
+            // Invalidate charges and summary cache (subscriptions might be affected too)
+            console.log(`🔄 Invalidating cache due to ${type} event for account ${stripeAccountId}`);
+            await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
+            break;
+          
+          case "customer.subscription.created":
+          case "customer.subscription.updated":
+          case "customer.subscription.deleted":
+          case "customer.subscription.trial_will_end":
+          case "invoice.payment_succeeded":
+          case "invoice.payment_failed":
+            // Invalidate subscriptions and summary cache
+            console.log(`🔄 Invalidating subscription cache due to ${type} event for account ${stripeAccountId}`);
+            await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
+            break;
+          
+          default:
+            // For other events, we still store them but don't invalidate cache
+            break;
+        }
       }
 
       res.json({ received: true });
@@ -294,6 +328,45 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       const effectiveRange =
         !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 30;
 
+      // Check if force refresh is requested
+      const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+      
+      // Cache TTL: 5 minutes (300 seconds)
+      const CACHE_TTL_MS = 5 * 60 * 1000;
+
+      // If force refresh, delete cache first
+      if (forceRefresh) {
+        await StripeChargesCache.deleteMany({
+          userId: user._id,
+          rangeDays: effectiveRange,
+        });
+        console.log(`🔄 Force refresh requested - cleared cache for user ${user._id}, rangeDays: ${effectiveRange}`);
+      }
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        let cachedData = await StripeChargesCache.findOne({
+          userId: user._id,
+          rangeDays: effectiveRange,
+        });
+
+        // If cache exists and is fresh, return it
+        if (cachedData && cachedData.cachedAt) {
+          const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
+          if (cacheAge < CACHE_TTL_MS) {
+            console.log(`✅ Returning cached charges for user ${user._id}, rangeDays: ${effectiveRange}`);
+            return res.json({
+              connected: true,
+              charges: cachedData.charges,
+              rangeDays: effectiveRange,
+              cached: true,
+            });
+          }
+        }
+      }
+
+      // Cache miss or stale - fetch from Stripe
+      console.log(`🔄 Fetching fresh charges from Stripe for user ${user._id}, rangeDays: ${effectiveRange}`);
       const nowSeconds = Math.floor(Date.now() / 1000);
       const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
 
@@ -319,13 +392,48 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
         failure_message: p.failure_message,
       }));
 
+      // Save to cache (upsert)
+      await StripeChargesCache.findOneAndUpdate(
+        { userId: user._id, rangeDays: effectiveRange },
+        {
+          userId: user._id,
+          stripeAccountId: user.stripeAccountId,
+          rangeDays: effectiveRange,
+          charges: mapped,
+          cachedAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
       return res.json({
         connected: true,
         charges: mapped,
         rangeDays: effectiveRange,
+        cached: false,
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe charges:", stripeErr);
+      
+      // Try to return stale cache if available
+      try {
+        const staleCache = await StripeChargesCache.findOne({
+          userId: user._id,
+          rangeDays: parseInt(req.query.rangeDays, 10) || 30,
+        });
+        if (staleCache && staleCache.charges) {
+          console.log("⚠️ Returning stale cache due to Stripe API error");
+          return res.json({
+            connected: true,
+            charges: staleCache.charges,
+            rangeDays: staleCache.rangeDays,
+            cached: true,
+            stale: true,
+          });
+        }
+      } catch (cacheErr) {
+        // Ignore cache errors
+      }
+      
       return res.status(500).json({
         error: "Failed to fetch Stripe charges",
       });
@@ -348,6 +456,42 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
     }
 
     try {
+      // Check if force refresh is requested
+      const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+      
+      // Cache TTL: 5 minutes (300 seconds)
+      const CACHE_TTL_MS = 5 * 60 * 1000;
+
+      // If force refresh, delete cache first
+      if (forceRefresh) {
+        await StripeSubscriptionsCache.deleteMany({
+          userId: user._id,
+        });
+        console.log(`🔄 Force refresh requested - cleared subscriptions cache for user ${user._id}`);
+      }
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        let cachedData = await StripeSubscriptionsCache.findOne({
+          userId: user._id,
+        });
+
+        // If cache exists and is fresh, return it
+        if (cachedData && cachedData.cachedAt) {
+          const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
+          if (cacheAge < CACHE_TTL_MS) {
+            console.log(`✅ Returning cached subscriptions for user ${user._id}`);
+            return res.json({
+              connected: true,
+              subscriptions: cachedData.subscriptions,
+              cached: true,
+            });
+          }
+        }
+      }
+
+      // Cache miss or stale - fetch from Stripe
+      console.log(`🔄 Fetching fresh subscriptions from Stripe for user ${user._id}`);
       const subscriptions = await stripe.subscriptions.list(
         {
           limit: 20,
@@ -433,12 +577,44 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
         };
       });
 
+      // Save to cache (upsert)
+      await StripeSubscriptionsCache.findOneAndUpdate(
+        { userId: user._id },
+        {
+          userId: user._id,
+          stripeAccountId: user.stripeAccountId,
+          subscriptions: mapped,
+          cachedAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
       return res.json({
         connected: true,
         subscriptions: mapped,
+        cached: false,
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe subscriptions:", stripeErr);
+      
+      // Try to return stale cache if available
+      try {
+        const staleCache = await StripeSubscriptionsCache.findOne({
+          userId: user._id,
+        });
+        if (staleCache && staleCache.subscriptions) {
+          console.log("⚠️ Returning stale cache due to Stripe API error");
+          return res.json({
+            connected: true,
+            subscriptions: staleCache.subscriptions,
+            cached: true,
+            stale: true,
+          });
+        }
+      } catch (cacheErr) {
+        // Ignore cache errors
+      }
+      
       return res.status(500).json({
         error: "Failed to fetch Stripe subscriptions",
       });
@@ -470,6 +646,48 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     const offsetDays =
       !isNaN(offsetDaysRaw) && offsetDaysRaw >= 0 ? offsetDaysRaw : 0;
 
+    // Check if force refresh is requested
+    const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+    
+    // Cache TTL: 5 minutes (300 seconds)
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+
+    // If force refresh, delete cache first
+    if (forceRefresh) {
+      await StripeSummaryCache.deleteMany({
+        userId: user._id,
+        rangeDays: effectiveRange,
+        offsetDays: offsetDays,
+      });
+      console.log(`🔄 Force refresh requested - cleared summary cache for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+    }
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      let cachedData = await StripeSummaryCache.findOne({
+        userId: user._id,
+        rangeDays: effectiveRange,
+        offsetDays: offsetDays,
+      });
+
+      // If cache exists and is fresh, return it
+      if (cachedData && cachedData.cachedAt) {
+        const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
+        if (cacheAge < CACHE_TTL_MS) {
+          console.log(`✅ Returning cached summary for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+          return res.json({
+            connected: true,
+            ...cachedData.summary,
+            rangeDays: effectiveRange,
+            offsetDays: offsetDays,
+            cached: true,
+          });
+        }
+      }
+    }
+
+    // Cache miss or stale - fetch from Stripe
+    console.log(`🔄 Fetching fresh summary from Stripe for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
     const periodEnd = nowSeconds - offsetDays * 24 * 60 * 60;
     const periodStart = periodEnd - effectiveRange * 24 * 60 * 60;
 
@@ -487,9 +705,13 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       let totalVolume = 0;
       let totalCount = 0;
       let failedCount = 0;
+      let currency = null;
 
       for (const p of payments) {
         totalCount += 1;
+        if (!currency && p.currency) {
+          currency = p.currency;
+        }
         if (p.paid) {
           totalVolume += p.amount;
         } else {
@@ -497,18 +719,61 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
         }
       }
 
-      return res.json({
-        connected: true,
-        totalVolume, // in smallest currency unit (e.g. cents)
-        currency: payments[0]?.currency || null,
+      const summary = {
+        totalVolume,
+        currency,
         totalCount,
         failedCount,
+      };
+
+      // Save to cache (upsert)
+      await StripeSummaryCache.findOneAndUpdate(
+        { userId: user._id, rangeDays: effectiveRange, offsetDays: offsetDays },
+        {
+          userId: user._id,
+          stripeAccountId: user.stripeAccountId,
+          rangeDays: effectiveRange,
+          offsetDays: offsetDays,
+          summary: summary,
+          cachedAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
+      return res.json({
+        connected: true,
+        ...summary,
         periodStart,
         periodEnd,
         rangeDays: effectiveRange,
+        offsetDays: offsetDays,
+        cached: false,
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe summary:", stripeErr);
+      
+      // Try to return stale cache if available
+      try {
+        const staleCache = await StripeSummaryCache.findOne({
+          userId: user._id,
+          rangeDays: effectiveRange,
+          offsetDays: offsetDays,
+        });
+        if (staleCache && staleCache.summary) {
+          console.log("⚠️ Returning stale cache due to Stripe API error");
+          return res.json({
+            connected: true,
+            ...staleCache.summary,
+            rangeDays: effectiveRange,
+            offsetDays: offsetDays,
+            cached: true,
+            stale: true,
+          });
+        }
+      } catch (cacheErr) {
+        // Ignore cache errors
+      }
+      
       return res.status(500).json({
         error: "Failed to fetch Stripe summary",
       });
@@ -596,7 +861,43 @@ app.get("/api/stripe/failures-summary", auth, async (req, res) => {
   }
 });
 
-// 8) Check failed payment alerts (24h) and send emails if threshold exceeded
+// 8) Manual cache invalidation endpoint (for testing/admin)
+app.post("/api/stripe/invalidate-cache", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    const { type, rangeDays } = req.body; // type: 'all' | 'charges' | 'subscriptions' | 'summary'
+
+    let result;
+    if (type === "all") {
+      result = await invalidateUserStripeCache(user._id, "Manual API call");
+    } else {
+      result = await invalidateSpecificCache(user._id, {
+        charges: type === "charges" || !type,
+        subscriptions: type === "subscriptions" || !type,
+        summary: type === "summary" || !type,
+        rangeDays: rangeDays || null,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Cache invalidated successfully",
+      deleted: result,
+    });
+  } catch (err) {
+    console.error("Cache invalidation error:", err);
+    res.status(500).json({ error: "Failed to invalidate cache" });
+  }
+});
+
+// 9) Check failed payment alerts (24h) and send emails if threshold exceeded
 // Intended to be called by a cron/uptime monitor with a shared secret key
 app.post("/api/alerts/check-failed-payments", async (req, res) => {
   try {

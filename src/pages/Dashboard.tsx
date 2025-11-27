@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import StarterDashboard from '../components/dashboard/StarterDashboard';
 import ProDashboard from '../components/dashboard/ProDashboard';
 import ScaleDashboard from '../components/dashboard/ScaleDashboard';
+import PaymentHealthCard from '../components/dashboard/PaymentHealthCard';
 import { apiCall } from '../utils/api';
 import ConnectStripeButton from '../components/ConnectStripeButton';
 
@@ -688,7 +689,27 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Stripe Payments */}
         {stripeStatus === 'connected' && (
-          <div className="mb-12">
+          <div className="mb-12 space-y-6">
+            {/* Payment Health Score card, driven by Stripe summary */}
+            {stripeSummaryStatus === 'loaded' && stripeSummary && (
+              <PaymentHealthCard
+                healthScore={healthMetrics?.healthScore}
+                successRatePct={healthMetrics?.successRatePct}
+                failureRatePct={healthMetrics?.failureRatePct}
+                successfulPayments={
+                  stripeSummary.totalCount - stripeSummary.failedCount
+                }
+                failedPayments={stripeSummary.failedCount}
+                rangeLabel={
+                  stripeRangeDays === 365
+                    ? '12 months'
+                    : stripeRangeDays === 180
+                    ? '6 months'
+                    : `${stripeRangeDays} days`
+                }
+              />
+            )}
+
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Recent Stripe Payments</h2>
             {stripeChargesStatus === 'loading' && (
               <p className="text-sm text-slate-500">Loading recent payments...</p>
@@ -1096,24 +1117,7 @@ const Dashboard: React.FC = () => {
         {/* Show appropriate dashboard based on plan */}
         {packageType && (
           <>
-            {packageType === 'starter' && (
-              <StarterDashboard
-                healthScore={healthMetrics?.healthScore}
-                successRatePct={healthMetrics?.successRatePct}
-                failureRatePct={healthMetrics?.failureRatePct}
-                successfulPayments={
-                  stripeSummary ? stripeSummary.totalCount - stripeSummary.failedCount : undefined
-                }
-                failedPayments={stripeSummary?.failedCount}
-                rangeLabel={
-                  stripeRangeDays === 365
-                    ? '12 months'
-                    : stripeRangeDays === 180
-                    ? '6 months'
-                    : `${stripeRangeDays} days`
-                }
-              />
-            )}
+            {packageType === 'starter' && <StarterDashboard />}
             {packageType === 'pro' && <ProDashboard />}
             {packageType === 'scale' && <ScaleDashboard />}
           </>

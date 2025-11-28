@@ -1098,11 +1098,11 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
       let successfulRenewals = 0;
       let totalRenewals = 0;
 
-      // Get invoices for renewal analysis
+      // Get invoices for renewal analysis (last 30 days for better coverage)
       const invoices = await stripe.invoices.list(
         {
           limit: 100,
-          created: { gte: last7Days },
+          created: { gte: nowSeconds - 30 * 24 * 60 * 60 }, // Last 30 days
         },
         {
           stripeAccount: user.stripeAccountId,
@@ -1360,6 +1360,223 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
       const mrrAtRisk = highRiskCustomers.reduce((sum, hr) => sum + hr.mrr, 0);
       const mrrRiskPercentage = totalMRR > 0 ? (mrrAtRisk / totalMRR) * 100 : 0;
 
+      // Enhanced Dunning Insights Analysis
+      const dunningInsights = [];
+
+      // Analyze failed renewals by reason
+      const failedRenewalsByReason = new Map();
+      const subscriptionsWithFailedInvoices = new Map();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Dunning Analysis: Found ${invoices.data.length} invoices, ${failedRenewals} failed renewals, ${highRiskCustomers.length} high-risk customers`);
+      }
+
+      invoices.data.forEach((invoice) => {
+        if (invoice.subscription && (invoice.status === "open" || invoice.status === "uncollectible" || invoice.status === "void")) {
+          const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription.id;
+          const sub = subscriptions.data.find((s) => s.id === subId);
+          if (sub) {
+            const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+            const reason = invoice.last_finalization_error?.message || 
+                          invoice.charge?.outcome?.reason || 
+                          invoice.charge?.failure_code || 
+                          "unknown";
+            
+            const key = reason.toLowerCase();
+            const existing = failedRenewalsByReason.get(key) || { count: 0, subscriptions: [], amount: 0 };
+            existing.count += 1;
+            existing.amount += invoice.amount_due || 0;
+            if (!existing.subscriptions.includes(subId)) {
+              existing.subscriptions.push(subId);
+            }
+            failedRenewalsByReason.set(key, existing);
+
+            if (!subscriptionsWithFailedInvoices.has(subId)) {
+              subscriptionsWithFailedInvoices.set(subId, {
+                subscriptionId: subId,
+                customerId: customerId,
+                invoiceId: invoice.id,
+                amount: invoice.amount_due || 0,
+                reason: reason,
+                currency: invoice.currency,
+              });
+            }
+          }
+        }
+      });
+
+      // Generate actionable insights
+      // 1. Expired cards
+      const expiredCardSubscriptions = highRiskCustomers
+        .filter((hr) => hr.factors.some((f) => f.includes("Card expired")))
+        .map((hr) => hr.subscriptionId);
+      if (expiredCardSubscriptions.length > 0) {
+        const expiredCardMRR = highRiskCustomers
+          .filter((hr) => hr.factors.some((f) => f.includes("Card expired")))
+          .reduce((sum, hr) => sum + hr.mrr, 0);
+        dunningInsights.push({
+          type: "expired_card",
+          priority: "high",
+          title: `${expiredCardSubscriptions.length} subscription${expiredCardSubscriptions.length !== 1 ? 's' : ''} with expired cards`,
+          description: `These customers need to update their payment method. MRR at risk: $${(expiredCardMRR / 100).toFixed(2)}`,
+          action: "send_card_update_email",
+          actionLabel: "Send Card Update Email",
+          affectedSubscriptions: expiredCardSubscriptions,
+          affectedCount: expiredCardSubscriptions.length,
+          mrrAtRisk: expiredCardMRR,
+        });
+      }
+
+      // 2. Cards expiring soon
+      const expiringCardSubscriptions = highRiskCustomers
+        .filter((hr) => hr.factors.some((f) => f.includes("Card expiring")))
+        .map((hr) => hr.subscriptionId);
+      if (expiringCardSubscriptions.length > 0) {
+        const expiringCardMRR = highRiskCustomers
+          .filter((hr) => hr.factors.some((f) => f.includes("Card expiring")))
+          .reduce((sum, hr) => sum + hr.mrr, 0);
+        dunningInsights.push({
+          type: "expiring_card",
+          priority: "medium",
+          title: `${expiringCardSubscriptions.length} subscription${expiringCardSubscriptions.length !== 1 ? 's' : ''} with cards expiring soon`,
+          description: `Proactively request updated payment methods before renewal. MRR at risk: $${(expiringCardMRR / 100).toFixed(2)}`,
+          action: "send_card_update_email",
+          actionLabel: "Send Card Update Email",
+          affectedSubscriptions: expiringCardSubscriptions,
+          affectedCount: expiringCardSubscriptions.length,
+          mrrAtRisk: expiringCardMRR,
+        });
+      }
+
+      // 3. Insufficient funds failures
+      const insufficientFunds = failedRenewalsByReason.get("insufficient_funds") || 
+                                failedRenewalsByReason.get("your card has insufficient funds") ||
+                                failedRenewalsByReason.get("card_declined");
+      if (insufficientFunds && insufficientFunds.count > 0) {
+        dunningInsights.push({
+          type: "insufficient_funds",
+          priority: "high",
+          title: `${insufficientFunds.count} renewal${insufficientFunds.count !== 1 ? 's' : ''} failed due to insufficient funds`,
+          description: `Retry these payments in 2-3 days when customer's account may have funds. Revenue at risk: $${(insufficientFunds.amount / 100).toFixed(2)}`,
+          action: "retry_payment",
+          actionLabel: "Retry Payment in 3 Days",
+          affectedSubscriptions: insufficientFunds.subscriptions,
+          affectedCount: insufficientFunds.count,
+          mrrAtRisk: insufficientFunds.amount,
+        });
+      }
+
+      // 4. Past due subscriptions
+      const pastDueSubscriptions = subscriptions.data
+        .filter((sub) => sub.status === "past_due")
+        .map((sub) => sub.id);
+      if (pastDueSubscriptions.length > 0) {
+        const pastDueMRR = subscriptions.data
+          .filter((sub) => sub.status === "past_due")
+          .reduce((sum, sub) => {
+            let subMRR = 0;
+            sub.items.data.forEach((item) => {
+              const priceObj = typeof item.price === "string" ? null : item.price;
+              if (priceObj?.unit_amount && priceObj?.recurring) {
+                let monthlyAmount = priceObj.unit_amount;
+                if (priceObj.recurring.interval === "year") {
+                  monthlyAmount = monthlyAmount / 12;
+                } else if (priceObj.recurring.interval === "week") {
+                  monthlyAmount = monthlyAmount * 4;
+                } else if (priceObj.recurring.interval === "day") {
+                  monthlyAmount = monthlyAmount * 30;
+                }
+                subMRR += monthlyAmount;
+              }
+            });
+            return sum + subMRR;
+          }, 0);
+        dunningInsights.push({
+          type: "past_due",
+          priority: "high",
+          title: `${pastDueSubscriptions.length} subscription${pastDueSubscriptions.length !== 1 ? 's' : ''} past due`,
+          description: `Contact these customers immediately to update payment method or resolve issue. MRR at risk: $${(pastDueMRR / 100).toFixed(2)}`,
+          action: "contact_customer",
+          actionLabel: "Contact Customers",
+          affectedSubscriptions: pastDueSubscriptions,
+          affectedCount: pastDueSubscriptions.length,
+          mrrAtRisk: pastDueMRR,
+        });
+      }
+
+      // 5. Generic failed renewals (if we have failed renewals but no specific insights)
+      if (failedRenewals > 0 && dunningInsights.length === 0) {
+        const failedSubscriptions = Array.from(subscriptionsWithFailedInvoices.keys());
+        if (failedSubscriptions.length > 0) {
+          dunningInsights.push({
+            type: "generic_failure",
+            priority: "medium",
+            title: `${failedRenewals} renewal${failedRenewals !== 1 ? 's' : ''} failed`,
+            description: `Review these failures and contact customers to update payment methods.`,
+            action: "review_failures",
+            actionLabel: "Review Failures",
+            affectedSubscriptions: failedSubscriptions,
+            affectedCount: failedRenewals,
+            mrrAtRisk: 0,
+          });
+        }
+      }
+
+      // 6. If we have at-risk customers but no other insights, create a general insight
+      if (atRiskCustomers > 0 && dunningInsights.length === 0) {
+        const atRiskSubscriptions = subscriptions.data
+          .filter((sub) => sub.status === "past_due" || highRiskCustomers.some(hr => hr.subscriptionId === sub.id))
+          .map((sub) => sub.id);
+        
+        if (atRiskSubscriptions.length > 0) {
+          const atRiskMRR = subscriptions.data
+            .filter((sub) => atRiskSubscriptions.includes(sub.id))
+            .reduce((sum, sub) => {
+              let subMRR = 0;
+              sub.items.data.forEach((item) => {
+                const priceObj = typeof item.price === "string" ? null : item.price;
+                if (priceObj?.unit_amount && priceObj?.recurring) {
+                  let monthlyAmount = priceObj.unit_amount;
+                  if (priceObj.recurring.interval === "year") {
+                    monthlyAmount = monthlyAmount / 12;
+                  } else if (priceObj.recurring.interval === "week") {
+                    monthlyAmount = monthlyAmount * 4;
+                  } else if (priceObj.recurring.interval === "day") {
+                    monthlyAmount = monthlyAmount * 30;
+                  }
+                  subMRR += monthlyAmount;
+                }
+              });
+              return sum + subMRR;
+            }, 0);
+          
+          dunningInsights.push({
+            type: "at_risk",
+            priority: "medium",
+            title: `${atRiskCustomers} customer${atRiskCustomers !== 1 ? 's' : ''} at risk`,
+            description: `These customers may need attention. MRR at risk: $${(atRiskMRR / 100).toFixed(2)}`,
+            action: "contact_customer",
+            actionLabel: "Review Customers",
+            affectedSubscriptions: atRiskSubscriptions,
+            affectedCount: atRiskCustomers,
+            mrrAtRisk: atRiskMRR,
+          });
+        }
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`💡 Generated ${dunningInsights.length} dunning insights`);
+      }
+
+      // Sort by priority (high first) and MRR at risk
+      dunningInsights.sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        if (priorityOrder[b.priority] !== priorityOrder[a.priority]) {
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        }
+        return b.mrrAtRisk - a.mrrAtRisk;
+      });
+
       return res.json({
         connected: true,
         metrics: {
@@ -1377,6 +1594,7 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
           highRiskCustomersCount: highRiskCustomers.length,
           highRiskCustomers: highRiskCustomers.slice(0, 10), // Return top 10 for UI
         },
+        dunningInsights: dunningInsights.slice(0, 5), // Return top 5 insights
       });
     } catch (stripeErr) {
       console.error("Error fetching renewal analysis:", stripeErr);

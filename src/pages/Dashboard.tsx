@@ -59,6 +59,17 @@ const Dashboard: React.FC = () => {
       factors: string[];
       mrr: number;
     }>;
+    dunningInsights?: Array<{
+      type: string;
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      description: string;
+      action: string;
+      actionLabel: string;
+      affectedSubscriptions: string[];
+      affectedCount: number;
+      mrrAtRisk: number;
+    }>;
   } | null>(null);
   const [disputes, setDisputes] = useState<{
     summary: {
@@ -420,7 +431,10 @@ const Dashboard: React.FC = () => {
 
         if (renewalRes.ok) {
           const renewalData = await renewalRes.json();
-          setRenewalMetrics(renewalData.metrics);
+          setRenewalMetrics({
+            ...renewalData.metrics,
+            dunningInsights: renewalData.dunningInsights || [],
+          });
           setRenewalMetricsStatus('loaded');
         } else {
           setRenewalMetricsStatus('error');

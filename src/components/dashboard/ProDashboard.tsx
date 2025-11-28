@@ -45,6 +45,17 @@ type ProDashboardProps = {
       factors: string[];
       mrr: number;
     }>;
+    dunningInsights?: Array<{
+      type: string;
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      description: string;
+      action: string;
+      actionLabel: string;
+      affectedSubscriptions: string[];
+      affectedCount: number;
+      mrrAtRisk: number;
+    }>;
   };
   disputes?: {
     summary: {
@@ -94,6 +105,18 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
   const mrrRiskPercentage = renewalMetrics?.mrrRiskPercentage || 0;
   const highRiskCustomersCount = renewalMetrics?.highRiskCustomersCount || 0;
   const highRiskCustomers = renewalMetrics?.highRiskCustomers || [];
+  const dunningInsights = renewalMetrics?.dunningInsights || [];
+
+  // Debug logging (development only)
+  if (process.env.NODE_ENV === 'development' && renewalMetricsStatus === 'loaded') {
+    console.log('📊 Pro Dashboard Data:', {
+      dunningInsightsCount: dunningInsights.length,
+      dunningInsights: dunningInsights,
+      failedRenewals,
+      atRiskCustomers,
+      highRiskCustomersCount,
+    });
+  }
 
   // Mock renewal predictions for now (can be enhanced with real prediction logic)
   const renewalPredictions = [
@@ -180,14 +203,89 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
             <div className="text-xs text-slate-500 mt-1">Next 30 days</div>
           </div>
         </div>
-        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-          <div className="text-sm font-medium text-slate-900 mb-2">Smart Dunning Suggestions</div>
-          <div className="text-xs text-slate-600">
-            {failedRenewals > 0 && `Retry ${failedRenewals} failed renewal${failedRenewals !== 1 ? 's' : ''} with updated payment methods. `}
-            {atRiskCustomers > 0 && `Contact ${atRiskCustomers} at-risk customer${atRiskCustomers !== 1 ? 's' : ''} before next billing cycle.`}
-            {failedRenewals === 0 && atRiskCustomers === 0 && 'No immediate actions needed. All renewals are healthy.'}
+        {dunningInsights.length > 0 ? (
+          <div className="space-y-3">
+            {dunningInsights.map((insight, index) => (
+              <div
+                key={index}
+                className={`p-4 rounded-xl border ${
+                  insight.priority === 'high'
+                    ? 'bg-red-50 border-red-200'
+                    : insight.priority === 'medium'
+                    ? 'bg-orange-50 border-orange-200'
+                    : 'bg-slate-50 border-slate-100'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className={`text-sm font-medium ${
+                      insight.priority === 'high' ? 'text-red-900' : 
+                      insight.priority === 'medium' ? 'text-orange-900' : 
+                      'text-slate-900'
+                    }`}>
+                      {insight.title}
+                    </div>
+                    <div className={`text-xs mt-1 ${
+                      insight.priority === 'high' ? 'text-red-700' : 
+                      insight.priority === 'medium' ? 'text-orange-700' : 
+                      'text-slate-600'
+                    }`}>
+                      {insight.description}
+                    </div>
+                  </div>
+                  {insight.priority === 'high' && (
+                    <span className="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-900 rounded">
+                      URGENT
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // Action handler - can be enhanced to actually perform actions
+                      const stripeBaseUrl = 'https://dashboard.stripe.com/test';
+                      if (insight.action === 'send_card_update_email') {
+                        // In production, this would trigger an email or API call
+                        alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would send card update emails to customers.`);
+                      } else if (insight.action === 'retry_payment') {
+                        alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would schedule payment retries.`);
+                      } else if (insight.action === 'contact_customer') {
+                        window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                        alert(`Opening Stripe dashboard to review ${insight.affectedCount} past due subscription(s).`);
+                      } else {
+                        window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                      }
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      insight.priority === 'high'
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : insight.priority === 'medium'
+                        ? 'bg-orange-600 text-white hover:bg-orange-700'
+                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {insight.actionLabel}
+                  </button>
+                  <a
+                    href={`https://dashboard.stripe.com/test/subscriptions`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-600 hover:text-slate-900 underline"
+                  >
+                    View in Stripe
+                  </a>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="text-sm font-medium text-slate-900 mb-2">Smart Dunning Suggestions</div>
+            <div className="text-xs text-slate-600">
+              No immediate actions needed. All renewals are healthy.
+            </div>
+          </div>
+        )}
           </>
         )}
         {renewalMetricsStatus === 'idle' && (
@@ -456,44 +554,119 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
       {/* AI Agent Full Mode */}
       <div className="card p-6">
         <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Full Mode)</h3>
-        <div className="space-y-3">
-          {failedRenewals > 0 && (
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="text-sm font-medium text-slate-900 mb-2">Recommended Retry Logic</div>
-              <div className="text-xs text-slate-600">
-                Enable automatic retry for {failedRenewals} failed renewal{failedRenewals !== 1 ? 's' : ''}. 
-                Suggested: Retry after 3 days with updated payment method.
+        {renewalMetricsStatus === 'loading' && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+            <p className="text-xs text-slate-600 mt-2">Analyzing payment patterns...</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'error' && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-xs text-red-700">Unable to load AI insights</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'loaded' && (
+          <div className="space-y-3">
+            {dunningInsights.length > 0 ? (
+              <>
+                {dunningInsights.map((insight, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-xl border ${
+                      insight.priority === 'high'
+                        ? 'bg-red-50 border-red-200'
+                        : insight.priority === 'medium'
+                        ? 'bg-orange-50 border-orange-200'
+                        : 'bg-slate-50 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className={`text-sm font-medium ${
+                          insight.priority === 'high' ? 'text-red-900' : 
+                          insight.priority === 'medium' ? 'text-orange-900' : 
+                          'text-slate-900'
+                        }`}>
+                          {insight.title}
+                        </div>
+                        <div className={`text-xs mt-1 ${
+                          insight.priority === 'high' ? 'text-red-700' : 
+                          insight.priority === 'medium' ? 'text-orange-700' : 
+                          'text-slate-600'
+                        }`}>
+                          {insight.description}
+                        </div>
+                      </div>
+                      {insight.priority === 'high' && (
+                        <span className="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-900 rounded">
+                          URGENT
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          // Action handler - can be enhanced to actually perform actions
+                          const stripeBaseUrl = 'https://dashboard.stripe.com/test';
+                          if (insight.action === 'send_card_update_email') {
+                            // In production, this would trigger an email or API call
+                            alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would send card update emails to customers.`);
+                          } else if (insight.action === 'retry_payment') {
+                            alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would schedule payment retries.`);
+                          } else if (insight.action === 'contact_customer') {
+                            window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                            alert(`Opening Stripe dashboard to review ${insight.affectedCount} past due subscription(s).`);
+                          } else {
+                            window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                          }
+                        }}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          insight.priority === 'high'
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : insight.priority === 'medium'
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-slate-900 text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {insight.actionLabel}
+                      </button>
+                      <a
+                        href={`https://dashboard.stripe.com/test/subscriptions`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-600 hover:text-slate-900 underline"
+                      >
+                        View in Stripe
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                {failureReasons && failureReasons.length > 0 && (
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-sm font-medium text-slate-900 mb-2">Top Decline Code Analysis</div>
+                    <div className="text-xs text-slate-600">
+                      "{failureReasons[0].reason}" ({failureReasons[0].count} occurrence{failureReasons[0].count !== 1 ? 's' : ''}): 
+                      {failureReasons[0].reason === 'insufficient_funds' && ' Customer\'s bank account lacks sufficient funds. Recommend retry after 2-3 days.'}
+                      {failureReasons[0].reason === 'expired_card' && ' Customer\'s card has expired. Request updated payment method.'}
+                      {failureReasons[0].reason === 'generic_decline' && ' Card was declined by the bank. Contact customer for alternative payment method.'}
+                      {!['insufficient_funds', 'expired_card', 'generic_decline'].includes(failureReasons[0].reason) && ' Review payment method and contact customer if needed.'}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                <div className="text-sm font-medium text-green-900 mb-2">✅ All Systems Healthy</div>
+                <div className="text-xs text-green-700">No immediate actions needed. Your subscription renewals are performing well.</div>
               </div>
-            </div>
-          )}
-          {atRiskCustomers > 0 && (
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="text-sm font-medium text-slate-900 mb-2">Settings to Fix Renewal Failures</div>
-              <div className="text-xs text-slate-600">
-                Update dunning settings: Enable email notifications 7 days before card expiry. 
-                Set up automatic card update flow. {atRiskCustomers} customer{atRiskCustomers !== 1 ? 's are' : ' is'} at risk.
-              </div>
-            </div>
-          )}
-          {failureReasons && failureReasons.length > 0 && (
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="text-sm font-medium text-slate-900 mb-2">Top Decline Code Explanation</div>
-              <div className="text-xs text-slate-600">
-                "{failureReasons[0].reason}" ({failureReasons[0].count} occurrence{failureReasons[0].count !== 1 ? 's' : ''}): 
-                {failureReasons[0].reason === 'insufficient_funds' && ' Customer\'s bank account lacks sufficient funds. Recommend retry after 2-3 days.'}
-                {failureReasons[0].reason === 'expired_card' && ' Customer\'s card has expired. Request updated payment method.'}
-                {failureReasons[0].reason === 'generic_decline' && ' Card was declined by the bank. Contact customer for alternative payment method.'}
-                {!['insufficient_funds', 'expired_card', 'generic_decline'].includes(failureReasons[0].reason) && ' Review payment method and contact customer if needed.'}
-              </div>
-            </div>
-          )}
-          {failedRenewals === 0 && atRiskCustomers === 0 && (!failureReasons || failureReasons.length === 0) && (
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="text-sm font-medium text-slate-900 mb-2">All Systems Healthy</div>
-              <div className="text-xs text-slate-600">No immediate actions needed. Your subscription renewals are performing well.</div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+        {renewalMetricsStatus === 'idle' && (
+          <div className="text-center py-4 text-slate-500 text-xs">
+            AI insights will load shortly...
+          </div>
+        )}
       </div>
 
       {/* Integrations */}

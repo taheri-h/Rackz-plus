@@ -141,7 +141,7 @@ app.post(
 
       // Basic routing for important events – invalidate cache when transactions change
       const stripeAccountId = account || null;
-      
+
       if (stripeAccountId) {
         // Invalidate cache for this Stripe account when relevant events occur
         switch (type) {
@@ -157,12 +157,17 @@ app.post(
           case "checkout.session.async_payment_succeeded":
           case "checkout.session.async_payment_failed":
             // Invalidate charges and summary cache (subscriptions might be affected too)
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🔄 Invalidating cache due to ${type} event for account ${stripeAccountId}`);
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `🔄 Invalidating cache due to ${type} event for account ${stripeAccountId}`
+              );
             }
-            await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
+            await invalidateStripeAccountCache(
+              stripeAccountId,
+              `Webhook: ${type}`
+            );
             break;
-          
+
           case "customer.subscription.created":
           case "customer.subscription.updated":
           case "customer.subscription.deleted":
@@ -170,12 +175,17 @@ app.post(
           case "invoice.payment_succeeded":
           case "invoice.payment_failed":
             // Invalidate subscriptions and summary cache
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`🔄 Invalidating subscription cache due to ${type} event for account ${stripeAccountId}`);
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `🔄 Invalidating subscription cache due to ${type} event for account ${stripeAccountId}`
+              );
             }
-            await invalidateStripeAccountCache(stripeAccountId, `Webhook: ${type}`);
+            await invalidateStripeAccountCache(
+              stripeAccountId,
+              `Webhook: ${type}`
+            );
             break;
-          
+
           default:
             // For other events, we still store them but don't invalidate cache
             break;
@@ -355,8 +365,9 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
         !isNaN(rangeDays) && allowedRanges.includes(rangeDays) ? rangeDays : 30;
 
       // Check if force refresh is requested
-      const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
-      
+      const forceRefresh =
+        req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+
       // Cache TTL: 5 minutes (300 seconds)
       const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -366,8 +377,10 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
           userId: user._id,
           rangeDays: effectiveRange,
         });
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 Force refresh requested - cleared cache for user ${user._id}, rangeDays: ${effectiveRange}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `🔄 Force refresh requested - cleared cache for user ${user._id}, rangeDays: ${effectiveRange}`
+          );
         }
       }
 
@@ -381,11 +394,13 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
         // If cache exists and is fresh, return it
         if (cachedData && cachedData.cachedAt) {
           const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
-        if (cacheAge < CACHE_TTL_MS) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Returning cached charges for user ${user._id}, rangeDays: ${effectiveRange}`);
-          }
-          return res.json({
+          if (cacheAge < CACHE_TTL_MS) {
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `✅ Returning cached charges for user ${user._id}, rangeDays: ${effectiveRange}`
+              );
+            }
+            return res.json({
               connected: true,
               charges: cachedData.charges,
               rangeDays: effectiveRange,
@@ -396,8 +411,10 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       }
 
       // Cache miss or stale - fetch from Stripe
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔄 Fetching fresh charges from Stripe for user ${user._id}, rangeDays: ${effectiveRange}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `🔄 Fetching fresh charges from Stripe for user ${user._id}, rangeDays: ${effectiveRange}`
+        );
       }
       const nowSeconds = Math.floor(Date.now() / 1000);
       const sinceSeconds = nowSeconds - effectiveRange * 24 * 60 * 60;
@@ -445,7 +462,7 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe charges:", stripeErr);
-      
+
       // Try to return stale cache if available
       try {
         const staleCache = await StripeChargesCache.findOne({
@@ -453,7 +470,7 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
           rangeDays: parseInt(req.query.rangeDays, 10) || 30,
         });
         if (staleCache && staleCache.charges) {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             console.log("⚠️ Returning stale cache due to Stripe API error");
           }
           return res.json({
@@ -467,7 +484,7 @@ app.get("/api/stripe/charges", auth, async (req, res) => {
       } catch (cacheErr) {
         // Ignore cache errors
       }
-      
+
       return res.status(500).json({
         error: "Failed to fetch Stripe charges",
       });
@@ -491,8 +508,9 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
 
     try {
       // Check if force refresh is requested
-      const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
-      
+      const forceRefresh =
+        req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+
       // Cache TTL: 5 minutes (300 seconds)
       const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -501,8 +519,10 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
         await StripeSubscriptionsCache.deleteMany({
           userId: user._id,
         });
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 Force refresh requested - cleared subscriptions cache for user ${user._id}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `🔄 Force refresh requested - cleared subscriptions cache for user ${user._id}`
+          );
         }
       }
 
@@ -515,11 +535,13 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
         // If cache exists and is fresh, return it
         if (cachedData && cachedData.cachedAt) {
           const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
-        if (cacheAge < CACHE_TTL_MS) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Returning cached subscriptions for user ${user._id}`);
-          }
-          return res.json({
+          if (cacheAge < CACHE_TTL_MS) {
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `✅ Returning cached subscriptions for user ${user._id}`
+              );
+            }
+            return res.json({
               connected: true,
               subscriptions: cachedData.subscriptions,
               cached: true,
@@ -529,8 +551,10 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
       }
 
       // Cache miss or stale - fetch from Stripe
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔄 Fetching fresh subscriptions from Stripe for user ${user._id}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `🔄 Fetching fresh subscriptions from Stripe for user ${user._id}`
+        );
       }
       const subscriptions = await stripe.subscriptions.list(
         {
@@ -636,14 +660,14 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe subscriptions:", stripeErr);
-      
+
       // Try to return stale cache if available
       try {
         const staleCache = await StripeSubscriptionsCache.findOne({
           userId: user._id,
         });
         if (staleCache && staleCache.subscriptions) {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             console.log("⚠️ Returning stale cache due to Stripe API error");
           }
           return res.json({
@@ -656,7 +680,7 @@ app.get("/api/stripe/subscriptions", auth, async (req, res) => {
       } catch (cacheErr) {
         // Ignore cache errors
       }
-      
+
       return res.status(500).json({
         error: "Failed to fetch Stripe subscriptions",
       });
@@ -689,8 +713,9 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       !isNaN(offsetDaysRaw) && offsetDaysRaw >= 0 ? offsetDaysRaw : 0;
 
     // Check if force refresh is requested
-    const forceRefresh = req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
-    
+    const forceRefresh =
+      req.query.forceRefresh === "true" || req.query.forceRefresh === "1";
+
     // Cache TTL: 5 minutes (300 seconds)
     const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -701,8 +726,10 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
         rangeDays: effectiveRange,
         offsetDays: offsetDays,
       });
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔄 Force refresh requested - cleared summary cache for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `🔄 Force refresh requested - cleared summary cache for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`
+        );
       }
     }
 
@@ -718,8 +745,10 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       if (cachedData && cachedData.cachedAt) {
         const cacheAge = Date.now() - new Date(cachedData.cachedAt).getTime();
         if (cacheAge < CACHE_TTL_MS) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`✅ Returning cached summary for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `✅ Returning cached summary for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`
+            );
           }
           return res.json({
             connected: true,
@@ -733,8 +762,10 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
     }
 
     // Cache miss or stale - fetch from Stripe
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Fetching fresh summary from Stripe for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `🔄 Fetching fresh summary from Stripe for user ${user._id}, rangeDays: ${effectiveRange}, offsetDays: ${offsetDays}`
+      );
     }
     const periodEnd = nowSeconds - offsetDays * 24 * 60 * 60;
     const periodStart = periodEnd - effectiveRange * 24 * 60 * 60;
@@ -799,7 +830,7 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       });
     } catch (stripeErr) {
       console.error("Error fetching Stripe summary:", stripeErr);
-      
+
       // Try to return stale cache if available
       try {
         const staleCache = await StripeSummaryCache.findOne({
@@ -808,7 +839,7 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
           offsetDays: offsetDays,
         });
         if (staleCache && staleCache.summary) {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             console.log("⚠️ Returning stale cache due to Stripe API error");
           }
           return res.json({
@@ -823,7 +854,7 @@ app.get("/api/stripe/summary", auth, async (req, res) => {
       } catch (cacheErr) {
         // Ignore cache errors
       }
-      
+
       return res.status(500).json({
         error: "Failed to fetch Stripe summary",
       });
@@ -959,7 +990,7 @@ app.get("/api/stripe/disputes", auth, async (req, res) => {
         if (statusCounts.hasOwnProperty(status)) {
           statusCounts[status] += 1;
         }
-        
+
         const amount = dispute.amount || 0;
         totalAmount += amount;
 
@@ -970,8 +1001,12 @@ app.get("/api/stripe/disputes", auth, async (req, res) => {
         }
 
         // Check if evidence is due soon (within 3 days)
-        if (dispute.evidence_details?.due_by && dispute.evidence_details.due_by > now) {
-          const daysUntilDue = (dispute.evidence_details.due_by - now) / (24 * 60 * 60);
+        if (
+          dispute.evidence_details?.due_by &&
+          dispute.evidence_details.due_by > now
+        ) {
+          const daysUntilDue =
+            (dispute.evidence_details.due_by - now) / (24 * 60 * 60);
           if (daysUntilDue <= 3) {
             evidenceDueCount += 1;
           }
@@ -998,8 +1033,10 @@ app.get("/api/stripe/disputes", auth, async (req, res) => {
         summary: {
           total: disputes.data.length,
           statusCounts: {
-            new: statusCounts.warning_needs_response + statusCounts.needs_response,
-            evidence: statusCounts.warning_under_review + statusCounts.under_review,
+            new:
+              statusCounts.warning_needs_response + statusCounts.needs_response,
+            evidence:
+              statusCounts.warning_under_review + statusCounts.under_review,
             won: statusCounts.won,
             lost: statusCounts.lost + statusCounts.charge_refunded,
           },
@@ -1038,7 +1075,6 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
       const nowSeconds = Math.floor(Date.now() / 1000);
       const next7Days = nowSeconds + 7 * 24 * 60 * 60;
       const last7Days = nowSeconds - 7 * 24 * 60 * 60;
-      const next30Days = nowSeconds + 30 * 24 * 60 * 60;
 
       // Get all subscriptions
       const subscriptions = await stripe.subscriptions.list(
@@ -1073,14 +1109,90 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
         }
       );
 
+      // Get upcoming invoices for better renewal predictions
+      const upcomingInvoices = [];
+      for (const sub of subscriptions.data) {
+        if (sub.status === "active" || sub.status === "trialing") {
+          try {
+            const upcoming = await stripe.invoices.retrieveUpcoming(
+              {
+                subscription: sub.id,
+              },
+              {
+                stripeAccount: user.stripeAccountId,
+              }
+            );
+            if (upcoming) {
+              upcomingInvoices.push(upcoming);
+            }
+          } catch (err) {
+            // Some subscriptions may not have upcoming invoices yet
+            if (
+              process.env.NODE_ENV === "development" &&
+              err.code !== "invoice_upcoming_none"
+            ) {
+              console.log(
+                `No upcoming invoice for subscription ${sub.id}:`,
+                err.message
+              );
+            }
+          }
+        }
+      }
+
+      // Fetch payment methods for card expiry detection
+      const customerIds = new Set();
+      subscriptions.data.forEach((sub) => {
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+        if (customerId) {
+          customerIds.add(customerId);
+        }
+      });
+
+      // Fetch payment methods for all customers
+      const paymentMethodsByCustomer = new Map();
+      for (const customerId of customerIds) {
+        try {
+          const paymentMethods = await stripe.paymentMethods.list(
+            {
+              customer: customerId,
+              type: "card",
+            },
+            {
+              stripeAccount: user.stripeAccountId,
+            }
+          );
+          paymentMethodsByCustomer.set(customerId, paymentMethods.data);
+        } catch (err) {
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `Error fetching payment methods for customer ${customerId}:`,
+              err.message
+            );
+          }
+        }
+      }
+
+      // High-risk customer scoring factors
+      const highRiskCustomers = [];
+      const customerRiskScores = new Map();
+
       subscriptions.data.forEach((sub) => {
         const isActive = ["active", "trialing"].includes(sub.status);
         const isCanceled = sub.cancel_at_period_end || sub.canceled_at;
+        const customerId =
+          typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+        // High-risk customer scoring
+        let riskScore = 0;
+        const riskFactors = [];
 
         if (isActive && !isCanceled) {
           activeSubscribers += 1;
 
           // Calculate MRR
+          let subscriptionMRR = 0;
           sub.items.data.forEach((item) => {
             const priceObj = typeof item.price === "string" ? null : item.price;
             if (priceObj?.unit_amount && priceObj?.recurring) {
@@ -1092,20 +1204,111 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
               } else if (priceObj.recurring.interval === "day") {
                 monthlyAmount = monthlyAmount * 30;
               }
+              subscriptionMRR += monthlyAmount;
               totalMRR += monthlyAmount;
             }
           });
 
-          // Check upcoming renewals (next 7 days)
-          if (sub.current_period_end && sub.current_period_end <= next7Days) {
+          // Check upcoming renewals (next 7 days) - use upcoming invoices if available
+          const hasUpcomingInvoice = upcomingInvoices.some(
+            (inv) => inv.subscription === sub.id && inv.amount_due > 0
+          );
+          // Count as upcoming if period ends in next 7 days OR has upcoming invoice
+          if (
+            (sub.current_period_end && sub.current_period_end <= next7Days) ||
+            hasUpcomingInvoice
+          ) {
             upcomingRenewals += 1;
           }
 
-          // Check card expiry (next 30 days) - approximate from subscription
-          // Note: Stripe doesn't expose card expiry directly, we'd need payment methods
-          // For now, we'll flag subscriptions with past_due status as at-risk
+          // Check card expiry from payment methods
+          const customerPaymentMethods = customerId
+            ? paymentMethodsByCustomer.get(customerId)
+            : [];
+          if (customerPaymentMethods && customerPaymentMethods.length > 0) {
+            customerPaymentMethods.forEach((pm) => {
+              if (pm.type === "card" && pm.card) {
+                const expMonth = pm.card.exp_month;
+                const expYear = pm.card.exp_year;
+                if (expMonth && expYear) {
+                  const expiryDate = new Date(expYear, expMonth - 1, 1);
+                  const now = new Date();
+                  const daysUntilExpiry = Math.ceil(
+                    (expiryDate - now) / (1000 * 60 * 60 * 24)
+                  );
+
+                  // Count cards expiring in next 30 days
+                  if (daysUntilExpiry > 0 && daysUntilExpiry <= 30) {
+                    cardExpirations += 1;
+                    riskScore += 30; // High risk factor
+                    riskFactors.push(
+                      `Card expiring in ${daysUntilExpiry} days`
+                    );
+                  }
+
+                  // Count expired cards
+                  if (daysUntilExpiry <= 0) {
+                    riskScore += 50; // Very high risk
+                    riskFactors.push("Card expired");
+                  }
+                }
+              }
+            });
+          }
+
+          // Check for past due status
           if (sub.status === "past_due") {
             atRiskCustomers += 1;
+            riskScore += 40;
+            riskFactors.push("Subscription past due");
+          }
+
+          // Check for recent failed invoices
+          const recentFailedInvoices = invoices.data.filter(
+            (inv) =>
+              inv.subscription === sub.id &&
+              (inv.status === "open" ||
+                inv.status === "uncollectible" ||
+                inv.status === "void")
+          );
+          if (recentFailedInvoices.length > 0) {
+            riskScore += 25 * recentFailedInvoices.length;
+            riskFactors.push(
+              `${recentFailedInvoices.length} recent failed invoice(s)`
+            );
+          }
+
+          // Check subscription age (newer subscriptions are higher risk)
+          const subscriptionAge = nowSeconds - sub.created;
+          const daysOld = subscriptionAge / (24 * 60 * 60);
+          if (daysOld < 30) {
+            riskScore += 10;
+            riskFactors.push("New subscription (< 30 days)");
+          }
+
+          // Store risk score for customer
+          if (customerId && riskScore > 0) {
+            const existingScore = customerRiskScores.get(customerId) || {
+              score: 0,
+              factors: [],
+              mrr: 0,
+            };
+            customerRiskScores.set(customerId, {
+              score: existingScore.score + riskScore,
+              factors: [...existingScore.factors, ...riskFactors],
+              mrr: existingScore.mrr + subscriptionMRR,
+            });
+          }
+
+          // Flag as high-risk if score > 50
+          if (riskScore >= 50) {
+            highRiskCustomers.push({
+              customerId,
+              subscriptionId: sub.id,
+              riskScore,
+              factors: riskFactors,
+              mrr: subscriptionMRR,
+            });
           }
         }
 
@@ -1120,7 +1323,10 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
           totalRenewals += 1;
           if (invoice.status === "paid") {
             successfulRenewals += 1;
-          } else if (invoice.status === "open" || invoice.status === "uncollectible") {
+          } else if (
+            invoice.status === "open" ||
+            invoice.status === "uncollectible"
+          ) {
             failedRenewals += 1;
           }
         }
@@ -1129,10 +1335,30 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
       const renewalSuccessRate =
         totalRenewals > 0 ? (successfulRenewals / totalRenewals) * 100 : 0;
 
-      // Simple prediction: based on historical failure rate
-      const predictedFailures = Math.round(
+      // Enhanced prediction: based on historical failure rate + risk factors
+      let predictedFailures = Math.round(
         upcomingRenewals * (1 - renewalSuccessRate / 100)
       );
+
+      // Adjust prediction based on high-risk customers
+      const highRiskUpcoming = highRiskCustomers.filter((hr) => {
+        const sub = subscriptions.data.find((s) => s.id === hr.subscriptionId);
+        return (
+          sub && sub.current_period_end && sub.current_period_end <= next7Days
+        );
+      }).length;
+
+      // Increase prediction if high-risk customers have upcoming renewals
+      if (highRiskUpcoming > 0) {
+        predictedFailures = Math.max(
+          predictedFailures,
+          Math.round(highRiskUpcoming * 0.7)
+        );
+      }
+
+      // Calculate MRR at risk (from high-risk customers)
+      const mrrAtRisk = highRiskCustomers.reduce((sum, hr) => sum + hr.mrr, 0);
+      const mrrRiskPercentage = totalMRR > 0 ? (mrrAtRisk / totalMRR) * 100 : 0;
 
       return res.json({
         connected: true,
@@ -1140,12 +1366,16 @@ app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
           upcomingRenewals,
           failedRenewals,
           atRiskCustomers,
-          cardExpirations, // Will be enhanced when we fetch payment methods
+          cardExpirations,
           activeSubscribers,
           cancellations,
           mrr: Math.round(totalMRR),
+          mrrAtRisk: Math.round(mrrAtRisk),
+          mrrRiskPercentage: Math.round(mrrRiskPercentage * 10) / 10,
           renewalSuccessRate: Math.round(renewalSuccessRate * 10) / 10,
           predictedFailures,
+          highRiskCustomersCount: highRiskCustomers.length,
+          highRiskCustomers: highRiskCustomers.slice(0, 10), // Return top 10 for UI
         },
       });
     } catch (stripeErr) {

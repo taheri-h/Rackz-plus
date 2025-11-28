@@ -45,8 +45,18 @@ const Dashboard: React.FC = () => {
     activeSubscribers: number;
     cancellations: number;
     mrr: number;
+    mrrAtRisk: number;
+    mrrRiskPercentage: number;
     renewalSuccessRate: number;
     predictedFailures: number;
+    highRiskCustomersCount: number;
+    highRiskCustomers?: Array<{
+      customerId: string;
+      subscriptionId: string;
+      riskScore: number;
+      factors: string[];
+      mrr: number;
+    }>;
   } | null>(null);
   const [disputes, setDisputes] = useState<{
     summary: {

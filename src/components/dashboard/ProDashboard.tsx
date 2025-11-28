@@ -30,8 +30,18 @@ type ProDashboardProps = {
     activeSubscribers: number;
     cancellations: number;
     mrr: number;
+    mrrAtRisk: number;
+    mrrRiskPercentage: number;
     renewalSuccessRate: number;
     predictedFailures: number;
+    highRiskCustomersCount: number;
+    highRiskCustomers?: Array<{
+      customerId: string;
+      subscriptionId: string;
+      riskScore: number;
+      factors: string[];
+      mrr: number;
+    }>;
   };
   disputes?: {
     summary: {
@@ -75,6 +85,10 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
   const upcomingRenewals = renewalMetrics?.upcomingRenewals || 0;
   const failedRenewals = renewalMetrics?.failedRenewals || 0;
   const predictedFailures = renewalMetrics?.predictedFailures || 0;
+  const mrrAtRisk = renewalMetrics?.mrrAtRisk || 0;
+  const mrrRiskPercentage = renewalMetrics?.mrrRiskPercentage || 0;
+  const highRiskCustomersCount = renewalMetrics?.highRiskCustomersCount || 0;
+  const highRiskCustomers = renewalMetrics?.highRiskCustomers || [];
 
   // Mock renewal predictions for now (can be enhanced with real prediction logic)
   const renewalPredictions = [
@@ -211,6 +225,14 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
               <span className="text-sm text-slate-600">MRR</span>
               <span className="text-xl font-bold text-slate-900">${mrr.toLocaleString()}</span>
             </div>
+            {mrrAtRisk > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600">MRR at Risk</span>
+                <span className={`text-lg font-semibold ${mrrRiskPercentage > 10 ? 'text-red-600' : mrrRiskPercentage > 5 ? 'text-orange-600' : 'text-slate-900'}`}>
+                  ${mrrAtRisk.toLocaleString()} ({mrrRiskPercentage.toFixed(1)}%)
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">Renewal Success Rate</span>
               <span className="text-lg font-semibold text-slate-900">{renewalSuccessRate}%</span>
@@ -219,6 +241,12 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
               <span className="text-sm text-slate-600">Active Subscribers</span>
               <span className="text-lg font-semibold text-slate-900">{activeSubscribers}</span>
             </div>
+            {highRiskCustomersCount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600">High-Risk Customers</span>
+                <span className="text-lg font-semibold text-red-600">{highRiskCustomersCount}</span>
+              </div>
+            )}
             <div className="pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600">Cancellations</span>
@@ -253,6 +281,53 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* High-Risk Customers */}
+      {highRiskCustomersCount > 0 && (
+        <div className="card p-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">High-Risk Customers</h3>
+          <div className="mb-4">
+            <div className="text-sm text-slate-600 mb-2">
+              {highRiskCustomersCount} customer{highRiskCustomersCount !== 1 ? 's' : ''} identified as high-risk
+              {mrrAtRisk > 0 && ` ($${(mrrAtRisk / 100).toLocaleString()} MRR at risk)`}
+            </div>
+          </div>
+          {highRiskCustomers.length > 0 && (
+            <div className="space-y-3">
+              {highRiskCustomers.map((customer, index) => (
+                <div key={index} className="p-4 bg-red-50 rounded-xl border border-red-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">
+                        Customer: {customer.customerId.substring(0, 20)}...
+                      </div>
+                      <div className="text-xs text-slate-600 mt-1">
+                        Risk Score: {customer.riskScore} | MRR: ${(customer.mrr / 100).toLocaleString()}
+                      </div>
+                    </div>
+                    <a
+                      href={`https://dashboard.stripe.com/test/customers/${customer.customerId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-slate-600 hover:text-slate-900 underline"
+                    >
+                      View in Stripe
+                    </a>
+                  </div>
+                  <div className="text-xs text-slate-600 mt-2">
+                    <div className="font-medium mb-1">Risk Factors:</div>
+                    <ul className="list-disc list-inside space-y-1">
+                      {customer.factors.map((factor, idx) => (
+                        <li key={idx}>{factor}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Checkout Deep Dive */}
       <div className="card p-6">

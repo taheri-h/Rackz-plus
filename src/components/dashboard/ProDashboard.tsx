@@ -10,6 +10,9 @@ type TrendDay = {
 };
 
 type ProDashboardProps = {
+  // Loading states
+  renewalMetricsStatus?: 'idle' | 'loading' | 'loaded' | 'error';
+  disputesStatus?: 'idle' | 'loading' | 'loaded' | 'error';
   // Starter dashboard props
   overviewSuccessful?: number;
   overviewFailed?: number;
@@ -62,6 +65,8 @@ type ProDashboardProps = {
 };
 
 const ProDashboard: React.FC<ProDashboardProps> = ({
+  renewalMetricsStatus = 'idle',
+  disputesStatus = 'idle',
   overviewSuccessful,
   overviewFailed,
   overviewRevenue,
@@ -140,7 +145,20 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
       {/* Subscription Renewal Health */}
       <div className="card p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-6">Subscription Renewal Health</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {renewalMetricsStatus === 'loading' && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+            <p className="text-sm text-slate-600 mt-2">Loading renewal data...</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'error' && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-sm text-red-700">Failed to load renewal data. Please try refreshing the page.</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'loaded' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="text-sm text-slate-600 mb-1">Upcoming Renewals</div>
             <div className="text-2xl font-bold text-slate-900">{upcomingRenewals}</div>
@@ -170,12 +188,32 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
             {failedRenewals === 0 && atRiskCustomers === 0 && 'No immediate actions needed. All renewals are healthy.'}
           </div>
         </div>
+          </>
+        )}
+        {renewalMetricsStatus === 'idle' && (
+          <div className="text-center py-4 text-slate-500 text-xs">
+            Renewal data will load shortly...
+          </div>
+        )}
       </div>
 
       {/* Renewal Failure Prediction */}
       <div className="card p-6">
         <h3 className="text-base font-semibold text-slate-900 mb-4">Renewal Failure Prediction (AI)</h3>
-        <div className="mb-4">
+        {renewalMetricsStatus === 'loading' && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+            <p className="text-xs text-slate-600 mt-2">Loading predictions...</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'error' && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-xs text-red-700">Unable to load predictions</p>
+          </div>
+        )}
+        {renewalMetricsStatus === 'loaded' && (
+          <>
+            <div className="mb-4">
           <div className="text-sm text-slate-600 mb-2">Predicted failures in next 7 days</div>
           <div className="text-2xl font-bold text-slate-900">{predictedFailures} customer{predictedFailures !== 1 ? 's' : ''}</div>
         </div>
@@ -214,22 +252,41 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
             <span>Actual</span>
           </div>
         </div>
+          </>
+        )}
+        {renewalMetricsStatus === 'idle' && (
+          <div className="text-center py-4 text-slate-500 text-xs">
+            Prediction data will load shortly...
+          </div>
+        )}
       </div>
 
       {/* Subscription KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card p-6">
           <h3 className="text-base font-semibold text-slate-900 mb-4">Subscription KPIs</h3>
-          <div className="space-y-4">
+          {renewalMetricsStatus === 'loading' && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+              <p className="text-xs text-slate-600 mt-2">Loading KPIs...</p>
+            </div>
+          )}
+          {renewalMetricsStatus === 'error' && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs text-red-700">Unable to load subscription KPIs</p>
+            </div>
+          )}
+          {renewalMetricsStatus === 'loaded' && (
+            <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">MRR</span>
-              <span className="text-xl font-bold text-slate-900">${mrr.toLocaleString()}</span>
+              <span className="text-xl font-bold text-slate-900">${(mrr / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             {mrrAtRisk > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-600">MRR at Risk</span>
                 <span className={`text-lg font-semibold ${mrrRiskPercentage > 10 ? 'text-red-600' : mrrRiskPercentage > 5 ? 'text-orange-600' : 'text-slate-900'}`}>
-                  ${mrrAtRisk.toLocaleString()} ({mrrRiskPercentage.toFixed(1)}%)
+                  ${(mrrAtRisk / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({mrrRiskPercentage.toFixed(1)}%)
                 </span>
               </div>
             )}
@@ -254,12 +311,31 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
               </div>
               <div className="text-xs text-slate-500 mt-1">This month</div>
             </div>
-          </div>
+            </div>
+          )}
+          {renewalMetricsStatus === 'idle' && (
+            <div className="text-center py-4 text-slate-500 text-xs">
+              KPI data will load shortly...
+            </div>
+          )}
         </div>
 
         <div className="card p-6">
           <h3 className="text-base font-semibold text-slate-900 mb-4">Chargeback Watch</h3>
-          <div className="space-y-3 mb-4">
+          {disputesStatus === 'loading' && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+              <p className="text-xs text-slate-600 mt-2">Loading chargebacks...</p>
+            </div>
+          )}
+          {disputesStatus === 'error' && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-xs text-red-700">Unable to load chargeback data</p>
+            </div>
+          )}
+          {disputesStatus === 'loaded' && (
+            <>
+              <div className="space-y-3 mb-4">
             {chargebacks.map((cb, index) => (
               <div key={index} className="flex justify-between items-center">
                 <span className="text-sm text-slate-600 capitalize">{cb.status}</span>
@@ -279,6 +355,13 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
               <div className="text-xs text-slate-500">No active disputes</div>
             )}
           </div>
+            </>
+          )}
+          {disputesStatus === 'idle' && (
+            <div className="text-center py-4 text-slate-500 text-xs">
+              Chargeback data will load shortly...
+            </div>
+          )}
         </div>
       </div>
 
@@ -289,7 +372,7 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
           <div className="mb-4">
             <div className="text-sm text-slate-600 mb-2">
               {highRiskCustomersCount} customer{highRiskCustomersCount !== 1 ? 's' : ''} identified as high-risk
-              {mrrAtRisk > 0 && ` ($${(mrrAtRisk / 100).toLocaleString()} MRR at risk)`}
+              {mrrAtRisk > 0 && ` ($${(mrrAtRisk / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MRR at risk)`}
             </div>
           </div>
           {highRiskCustomers.length > 0 && (
@@ -302,7 +385,7 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
                         Customer: {customer.customerId.substring(0, 20)}...
                       </div>
                       <div className="text-xs text-slate-600 mt-1">
-                        Risk Score: {customer.riskScore} | MRR: ${(customer.mrr / 100).toLocaleString()}
+                        Risk Score: {customer.riskScore} | MRR: ${(customer.mrr / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
                     <a

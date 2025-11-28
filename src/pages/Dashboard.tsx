@@ -37,6 +37,8 @@ const Dashboard: React.FC = () => {
     currency: string | null;
   } | null>(null);
   // Pro-specific data
+  const [renewalMetricsStatus, setRenewalMetricsStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [disputesStatus, setDisputesStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [renewalMetrics, setRenewalMetrics] = useState<{
     upcomingRenewals: number;
     failedRenewals: number;
@@ -409,6 +411,7 @@ const Dashboard: React.FC = () => {
     const fetchProData = async () => {
       try {
         // Fetch renewal analysis
+        setRenewalMetricsStatus('loading');
         const renewalRes = await apiCall('/stripe/renewal-analysis', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -418,9 +421,16 @@ const Dashboard: React.FC = () => {
         if (renewalRes.ok) {
           const renewalData = await renewalRes.json();
           setRenewalMetrics(renewalData.metrics);
+          setRenewalMetricsStatus('loaded');
+        } else {
+          setRenewalMetricsStatus('error');
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to fetch renewal analysis:', renewalRes.status);
+          }
         }
 
         // Fetch disputes/chargebacks
+        setDisputesStatus('loading');
         const disputesRes = await apiCall('/stripe/disputes?rangeDays=90', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -432,8 +442,16 @@ const Dashboard: React.FC = () => {
           setDisputes({
             summary: disputesData.summary,
           });
+          setDisputesStatus('loaded');
+        } else {
+          setDisputesStatus('error');
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Failed to fetch disputes:', disputesRes.status);
+          }
         }
       } catch (error) {
+        setRenewalMetricsStatus('error');
+        setDisputesStatus('error');
         if (process.env.NODE_ENV === 'development') {
           console.error('Error loading Pro data:', error);
         }
@@ -1615,7 +1633,9 @@ const Dashboard: React.FC = () => {
                   stripeRangeDays >= 30 ? '30 days' : '7 days'
                 }
                 renewalMetrics={renewalMetrics || undefined}
+                renewalMetricsStatus={renewalMetricsStatus}
                 disputes={disputes || undefined}
+                disputesStatus={disputesStatus}
               />
             )}
             {packageType === 'scale' && <ScaleDashboard />}

@@ -2,84 +2,84 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://fynteq.com/</loc>
+    <loc>https://getrackz.com/</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://fynteq.com/fynteq-logo.png</image:loc>
-      <image:title>Fynteq Payment Integration Services</image:title>
+      <image:loc>https://getrackz.com/rackz-logo.png</image:loc>
+      <image:title>Rackz Payment Integration Services</image:title>
       <image:caption>Professional payment integration services for SaaS, e-commerce, and startups</image:caption>
     </image:image>
   </url>
   <url>
-    <loc>https://fynteq.com/privacy</loc>
+    <loc>https://getrackz.com/privacy</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/terms</loc>
+    <loc>https://getrackz.com/terms</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/cookies</loc>
+    <loc>https://getrackz.com/cookies</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/refund</loc>
+    <loc>https://getrackz.com/refund</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/security</loc>
+    <loc>https://getrackz.com/security</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/imprint</loc>
+    <loc>https://getrackz.com/imprint</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/starter-form</loc>
+    <loc>https://getrackz.com/starter-form</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/growth-form</loc>
+    <loc>https://getrackz.com/growth-form</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/scale-form</loc>
+    <loc>https://getrackz.com/scale-form</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog</loc>
+    <loc>https://getrackz.com/blog</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies</loc>
+    <loc>https://getrackz.com/case-studies</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/#support</loc>
+    <loc>https://getrackz.com/#support</loc>
     <lastmod>2024-12-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -87,73 +87,73 @@
   
   <!-- Blog Posts -->
   <url>
-    <loc>https://fynteq.com/blog/stripe-vs-paypal-vs-square-comparison-2024</loc>
+    <loc>https://getrackz.com/blog/stripe-vs-paypal-vs-square-comparison-2024</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/stripe-recurring-billing-subscription-management-guide</loc>
+    <loc>https://getrackz.com/blog/stripe-recurring-billing-subscription-management-guide</loc>
     <lastmod>2024-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/best-payment-processing-solutions-ecommerce-2024</loc>
+    <loc>https://getrackz.com/blog/best-payment-processing-solutions-ecommerce-2024</loc>
     <lastmod>2024-01-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/credit-card-processing-fees-stripe-paypal-square-2024</loc>
+    <loc>https://getrackz.com/blog/credit-card-processing-fees-stripe-paypal-square-2024</loc>
     <lastmod>2023-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/payment-security-pci-dss-compliance-guide-2024</loc>
+    <loc>https://getrackz.com/blog/payment-security-pci-dss-compliance-guide-2024</loc>
     <lastmod>2023-12-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/saas-billing-models-freemium-usage-based-enterprise-pricing</loc>
+    <loc>https://getrackz.com/blog/saas-billing-models-freemium-usage-based-enterprise-pricing</loc>
     <lastmod>2023-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/stripe-api-integration-developer-guide-2024</loc>
+    <loc>https://getrackz.com/blog/stripe-api-integration-developer-guide-2024</loc>
     <lastmod>2023-12-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/checkout-optimization-reduce-cart-abandonment-increase-conversion</loc>
+    <loc>https://getrackz.com/blog/checkout-optimization-reduce-cart-abandonment-increase-conversion</loc>
     <lastmod>2023-12-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/fraud-prevention-payment-security-guide-online-businesses</loc>
+    <loc>https://getrackz.com/blog/fraud-prevention-payment-security-guide-online-businesses</loc>
     <lastmod>2023-12-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/mobile-payment-design-optimizing-checkout-experience</loc>
+    <loc>https://getrackz.com/blog/mobile-payment-design-optimizing-checkout-experience</loc>
     <lastmod>2023-12-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/international-payment-processing-multicurrency-guide</loc>
+    <loc>https://getrackz.com/blog/international-payment-processing-multicurrency-guide</loc>
     <lastmod>2023-12-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/blog/global-payment-methods-local-solutions-international-expansion</loc>
+    <loc>https://getrackz.com/blog/global-payment-methods-local-solutions-international-expansion</loc>
     <lastmod>2023-12-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -162,37 +162,37 @@
   <!-- Case Studies -->
   <!-- Case Studies -->
   <url>
-    <loc>https://fynteq.com/case-studies/fitness-coach-increased-revenue-subscription-billing</loc>
+    <loc>https://getrackz.com/case-studies/fitness-coach-increased-revenue-subscription-billing</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies/ecommerce-store-expands-multi-currency</loc>
+    <loc>https://getrackz.com/case-studies/ecommerce-store-expands-multi-currency</loc>
     <lastmod>2024-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies/saas-startup-scales-monthly-revenue</loc>
+    <loc>https://getrackz.com/case-studies/saas-startup-scales-monthly-revenue</loc>
     <lastmod>2024-01-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies/marketplace-platform-multi-vendor-payments</loc>
+    <loc>https://getrackz.com/case-studies/marketplace-platform-multi-vendor-payments</loc>
     <lastmod>2023-12-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies/yoga-studio-doubles-revenue-automated-booking</loc>
+    <loc>https://getrackz.com/case-studies/yoga-studio-doubles-revenue-automated-booking</loc>
     <lastmod>2023-12-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fynteq.com/case-studies/fashion-boutique-seamless-checkout</loc>
+    <loc>https://getrackz.com/case-studies/fashion-boutique-seamless-checkout</loc>
     <lastmod>2023-12-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

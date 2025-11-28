@@ -1,7 +1,7 @@
 # Force HTTPS first
-http://fynteq.com/*    https://fynteq.com/:splat    301!
-http://www.fynteq.com/*    https://fynteq.com/:splat    301!
-https://www.fynteq.com/*    https://fynteq.com/:splat    301!
+http://rackz.com/*    https://getrackz.com/:splat    301!
+http://www.rackz.com/*    https://getrackz.com/:splat    301!
+https://getrackz.com/*    https://getrackz.com/:splat    301!
 
 # Redirect old German routes to English homepage
 /de    /    301!

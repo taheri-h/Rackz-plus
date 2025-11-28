@@ -36,6 +36,34 @@ const Dashboard: React.FC = () => {
     totalFailedAmount: number;
     currency: string | null;
   } | null>(null);
+  // Pro-specific data
+  const [renewalMetrics, setRenewalMetrics] = useState<{
+    upcomingRenewals: number;
+    failedRenewals: number;
+    atRiskCustomers: number;
+    cardExpirations: number;
+    activeSubscribers: number;
+    cancellations: number;
+    mrr: number;
+    renewalSuccessRate: number;
+    predictedFailures: number;
+  } | null>(null);
+  const [disputes, setDisputes] = useState<{
+    summary: {
+      total: number;
+      statusCounts: {
+        new: number;
+        evidence: number;
+        won: number;
+        lost: number;
+      };
+      totalAmount: number;
+      wonAmount: number;
+      lostAmount: number;
+      winRate: number;
+      evidenceDueCount: number;
+    };
+  } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -360,6 +388,50 @@ const Dashboard: React.FC = () => {
 
     fetchSummary();
   }, [user, getAuthToken, stripeRangeDays]);
+
+  // Load Pro-specific data (renewal analysis and disputes) - only for Pro plan
+  useEffect(() => {
+    if (!user || packageType !== 'pro') return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const fetchProData = async () => {
+      try {
+        // Fetch renewal analysis
+        const renewalRes = await apiCall('/stripe/renewal-analysis', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (renewalRes.ok) {
+          const renewalData = await renewalRes.json();
+          setRenewalMetrics(renewalData.metrics);
+        }
+
+        // Fetch disputes/chargebacks
+        const disputesRes = await apiCall('/stripe/disputes?rangeDays=90', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (disputesRes.ok) {
+          const disputesData = await disputesRes.json();
+          setDisputes({
+            summary: disputesData.summary,
+          });
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error loading Pro data:', error);
+        }
+      }
+    };
+
+    fetchProData();
+  }, [user, getAuthToken, packageType]);
 
   const providers = [
     { id: 'stripe', name: 'Stripe', logo: '/images/brands/stripe-logo-AQEyPRPODaTM3Ern.png.avif' },
@@ -1467,7 +1539,75 @@ const Dashboard: React.FC = () => {
                 }
               />
             )}
-            {packageType === 'pro' && <ProDashboard />}
+            {packageType === 'pro' && (
+              <ProDashboard
+                overviewSuccessful={
+                  stripeSummary
+                    ? stripeSummary.totalCount - stripeSummary.failedCount
+                    : undefined
+                }
+                overviewFailed={stripeSummary?.failedCount}
+                overviewRevenue={
+                  stripeSummary?.totalVolume
+                    ? stripeSummary.totalVolume / 100
+                    : undefined
+                }
+                overviewSuccessRatePct={healthMetrics?.successRatePct}
+                overviewRangeLabel={
+                  stripeRangeDays === 365
+                    ? '12 months'
+                    : stripeRangeDays === 180
+                    ? '6 months'
+                    : `${stripeRangeDays} days`
+                }
+                trendDays={(() => {
+                  const days: { label: string; success: number; failed: number }[] = [];
+                  const now = new Date();
+                  const dayKeys: string[] = [];
+                  for (let i = 6; i >= 0; i--) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() - i);
+                    const key = d.toISOString().slice(0, 10);
+                    dayKeys.push(key);
+                    days.push({
+                      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+                      success: 0,
+                      failed: 0,
+                    });
+                  }
+
+                  const sevenDaysAgoMs =
+                    now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+                  stripeCharges.forEach((charge) => {
+                    const createdMs = charge.created * 1000;
+                    if (createdMs < sevenDaysAgoMs) return;
+                    const d = new Date(createdMs);
+                    const key = d.toISOString().slice(0, 10);
+                    const index = dayKeys.indexOf(key);
+                    if (index === -1) return;
+
+                    const isSuccess =
+                      charge.paid && charge.status === 'succeeded';
+                    if (isSuccess) {
+                      days[index].success += 1;
+                    } else {
+                      days[index].failed += 1;
+                    }
+                  });
+
+                  return days;
+                })()}
+                failureReasons={failureReasons?.reasons}
+                failureTotalAmount={failureReasons?.totalFailedAmount}
+                failureCurrency={failureReasons?.currency}
+                failureRangeLabel={
+                  stripeRangeDays >= 30 ? '30 days' : '7 days'
+                }
+                renewalMetrics={renewalMetrics || undefined}
+                disputes={disputes || undefined}
+              />
+            )}
             {packageType === 'scale' && <ScaleDashboard />}
           </>
         )}

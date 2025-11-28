@@ -113,6 +113,11 @@ const Signin: React.FC = () => {
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-sm text-red-700">{error}</p>
+                {error.includes('Too many') && (
+                  <p className="text-xs text-red-600 mt-2">
+                    Please wait 15 minutes before trying again, or use the "Forgot password?" link to reset your password.
+                  </p>
+                )}
               </div>
             )}
 

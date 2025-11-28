@@ -68,10 +68,11 @@ const apiLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit auth endpoints to 5 requests per windowMs
+  max: 10, // Limit auth endpoints to 10 requests per windowMs (increased from 5)
   message: "Too many authentication attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful logins
 });
 
 // Middleware
@@ -910,7 +911,256 @@ app.get("/api/stripe/failures-summary", auth, async (req, res) => {
   }
 });
 
-// 8) Manual cache invalidation endpoint (for testing/admin)
+// 8) Get Stripe disputes/chargebacks for Pro plan
+app.get("/api/stripe/disputes", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    try {
+      const rangeDays = parseInt(req.query.rangeDays, 10) || 90;
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const sinceSeconds = nowSeconds - rangeDays * 24 * 60 * 60;
+
+      const disputes = await stripe.disputes.list(
+        {
+          limit: 100,
+          created: { gte: sinceSeconds },
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      // Group by status
+      const statusCounts = {
+        warning_needs_response: 0,
+        warning_under_review: 0,
+        needs_response: 0,
+        under_review: 0,
+        charge_refunded: 0,
+        won: 0,
+        lost: 0,
+      };
+
+      let totalAmount = 0;
+      let wonAmount = 0;
+      let lostAmount = 0;
+      let evidenceDueCount = 0;
+      const now = Date.now() / 1000;
+
+      disputes.data.forEach((dispute) => {
+        const status = dispute.status;
+        if (statusCounts.hasOwnProperty(status)) {
+          statusCounts[status] += 1;
+        }
+        
+        const amount = dispute.amount || 0;
+        totalAmount += amount;
+
+        if (status === "won") {
+          wonAmount += amount;
+        } else if (status === "lost" || status === "charge_refunded") {
+          lostAmount += amount;
+        }
+
+        // Check if evidence is due soon (within 3 days)
+        if (dispute.evidence_details?.due_by && dispute.evidence_details.due_by > now) {
+          const daysUntilDue = (dispute.evidence_details.due_by - now) / (24 * 60 * 60);
+          if (daysUntilDue <= 3) {
+            evidenceDueCount += 1;
+          }
+        }
+      });
+
+      const winRate =
+        wonAmount + lostAmount > 0
+          ? (wonAmount / (wonAmount + lostAmount)) * 100
+          : 0;
+
+      return res.json({
+        connected: true,
+        disputes: disputes.data.map((d) => ({
+          id: d.id,
+          amount: d.amount,
+          currency: d.currency,
+          status: d.status,
+          reason: d.reason,
+          created: d.created,
+          evidenceDueBy: d.evidence_details?.due_by || null,
+          chargeId: typeof d.charge === "string" ? d.charge : d.charge?.id,
+        })),
+        summary: {
+          total: disputes.data.length,
+          statusCounts: {
+            new: statusCounts.warning_needs_response + statusCounts.needs_response,
+            evidence: statusCounts.warning_under_review + statusCounts.under_review,
+            won: statusCounts.won,
+            lost: statusCounts.lost + statusCounts.charge_refunded,
+          },
+          totalAmount,
+          wonAmount,
+          lostAmount,
+          winRate: Math.round(winRate * 10) / 10,
+          evidenceDueCount,
+        },
+        rangeDays,
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching Stripe disputes:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch Stripe disputes",
+      });
+    }
+  } catch (err) {
+    console.error("Stripe disputes route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 9) Get subscription renewal analysis for Pro plan
+app.get("/api/stripe/renewal-analysis", auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user.stripeAccountId) {
+      return res.status(400).json({
+        error: "No Stripe account connected",
+      });
+    }
+
+    try {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const next7Days = nowSeconds + 7 * 24 * 60 * 60;
+      const last7Days = nowSeconds - 7 * 24 * 60 * 60;
+      const next30Days = nowSeconds + 30 * 24 * 60 * 60;
+
+      // Get all subscriptions
+      const subscriptions = await stripe.subscriptions.list(
+        {
+          limit: 100,
+          status: "all",
+          expand: ["data.customer", "data.items.data.price"],
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      let upcomingRenewals = 0;
+      let failedRenewals = 0;
+      let atRiskCustomers = 0;
+      let cardExpirations = 0;
+      let activeSubscribers = 0;
+      let cancellations = 0;
+      let totalMRR = 0;
+      let successfulRenewals = 0;
+      let totalRenewals = 0;
+
+      // Get invoices for renewal analysis
+      const invoices = await stripe.invoices.list(
+        {
+          limit: 100,
+          created: { gte: last7Days },
+        },
+        {
+          stripeAccount: user.stripeAccountId,
+        }
+      );
+
+      subscriptions.data.forEach((sub) => {
+        const isActive = ["active", "trialing"].includes(sub.status);
+        const isCanceled = sub.cancel_at_period_end || sub.canceled_at;
+
+        if (isActive && !isCanceled) {
+          activeSubscribers += 1;
+
+          // Calculate MRR
+          sub.items.data.forEach((item) => {
+            const priceObj = typeof item.price === "string" ? null : item.price;
+            if (priceObj?.unit_amount && priceObj?.recurring) {
+              let monthlyAmount = priceObj.unit_amount;
+              if (priceObj.recurring.interval === "year") {
+                monthlyAmount = monthlyAmount / 12;
+              } else if (priceObj.recurring.interval === "week") {
+                monthlyAmount = monthlyAmount * 4;
+              } else if (priceObj.recurring.interval === "day") {
+                monthlyAmount = monthlyAmount * 30;
+              }
+              totalMRR += monthlyAmount;
+            }
+          });
+
+          // Check upcoming renewals (next 7 days)
+          if (sub.current_period_end && sub.current_period_end <= next7Days) {
+            upcomingRenewals += 1;
+          }
+
+          // Check card expiry (next 30 days) - approximate from subscription
+          // Note: Stripe doesn't expose card expiry directly, we'd need payment methods
+          // For now, we'll flag subscriptions with past_due status as at-risk
+          if (sub.status === "past_due") {
+            atRiskCustomers += 1;
+          }
+        }
+
+        if (isCanceled) {
+          cancellations += 1;
+        }
+      });
+
+      // Analyze invoices for failed renewals
+      invoices.data.forEach((invoice) => {
+        if (invoice.subscription) {
+          totalRenewals += 1;
+          if (invoice.status === "paid") {
+            successfulRenewals += 1;
+          } else if (invoice.status === "open" || invoice.status === "uncollectible") {
+            failedRenewals += 1;
+          }
+        }
+      });
+
+      const renewalSuccessRate =
+        totalRenewals > 0 ? (successfulRenewals / totalRenewals) * 100 : 0;
+
+      // Simple prediction: based on historical failure rate
+      const predictedFailures = Math.round(
+        upcomingRenewals * (1 - renewalSuccessRate / 100)
+      );
+
+      return res.json({
+        connected: true,
+        metrics: {
+          upcomingRenewals,
+          failedRenewals,
+          atRiskCustomers,
+          cardExpirations, // Will be enhanced when we fetch payment methods
+          activeSubscribers,
+          cancellations,
+          mrr: Math.round(totalMRR),
+          renewalSuccessRate: Math.round(renewalSuccessRate * 10) / 10,
+          predictedFailures,
+        },
+      });
+    } catch (stripeErr) {
+      console.error("Error fetching renewal analysis:", stripeErr);
+      return res.status(500).json({
+        error: "Failed to fetch renewal analysis",
+      });
+    }
+  } catch (err) {
+    console.error("Renewal analysis route error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 10) Manual cache invalidation endpoint (for testing/admin)
 app.post("/api/stripe/invalidate-cache", auth, async (req, res) => {
   try {
     const user = req.user;

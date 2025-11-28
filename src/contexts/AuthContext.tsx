@@ -183,7 +183,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Invalid email or password');
+        const errorMessage = error.error || 'Invalid email or password';
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Signin error:', errorMessage, 'Status:', response.status);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

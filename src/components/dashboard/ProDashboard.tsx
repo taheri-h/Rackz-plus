@@ -3,38 +3,125 @@ import StarterDashboard from './StarterDashboard';
 import IntegrationsSection from './IntegrationsSection';
 import DashboardMetricsCards from './DashboardMetricsCards';
 
-const ProDashboard: React.FC = () => {
-  // Mock subscription data
-  const mrr = 12450;
-  const renewalSuccessRate = 94.5;
-  const activeSubscribers = 342;
-  const cancellations = 8;
-  const atRiskCustomers = 12;
-  const upcomingExpirations = 23;
+type TrendDay = {
+  label: string;
+  success: number;
+  failed: number;
+};
 
+type ProDashboardProps = {
+  // Starter dashboard props
+  overviewSuccessful?: number;
+  overviewFailed?: number;
+  overviewRevenue?: number;
+  overviewSuccessRatePct?: number;
+  overviewRangeLabel?: string;
+  trendDays?: TrendDay[];
+  failureReasons?: { reason: string; count: number; amount: number }[];
+  failureTotalAmount?: number;
+  failureCurrency?: string | null;
+  failureRangeLabel?: string;
+  // Pro-specific data
+  renewalMetrics?: {
+    upcomingRenewals: number;
+    failedRenewals: number;
+    atRiskCustomers: number;
+    cardExpirations: number;
+    activeSubscribers: number;
+    cancellations: number;
+    mrr: number;
+    renewalSuccessRate: number;
+    predictedFailures: number;
+  };
+  disputes?: {
+    summary: {
+      total: number;
+      statusCounts: {
+        new: number;
+        evidence: number;
+        won: number;
+        lost: number;
+      };
+      totalAmount: number;
+      wonAmount: number;
+      lostAmount: number;
+      winRate: number;
+      evidenceDueCount: number;
+    };
+  };
+};
+
+const ProDashboard: React.FC<ProDashboardProps> = ({
+  overviewSuccessful,
+  overviewFailed,
+  overviewRevenue,
+  overviewSuccessRatePct,
+  overviewRangeLabel,
+  trendDays,
+  failureReasons,
+  failureTotalAmount,
+  failureCurrency,
+  failureRangeLabel,
+  renewalMetrics,
+  disputes,
+}) => {
+  // Use real data or fallback to defaults
+  const mrr = renewalMetrics?.mrr || 0;
+  const renewalSuccessRate = renewalMetrics?.renewalSuccessRate || 0;
+  const activeSubscribers = renewalMetrics?.activeSubscribers || 0;
+  const cancellations = renewalMetrics?.cancellations || 0;
+  const atRiskCustomers = renewalMetrics?.atRiskCustomers || 0;
+  const upcomingExpirations = renewalMetrics?.cardExpirations || 0;
+  const upcomingRenewals = renewalMetrics?.upcomingRenewals || 0;
+  const failedRenewals = renewalMetrics?.failedRenewals || 0;
+  const predictedFailures = renewalMetrics?.predictedFailures || 0;
+
+  // Mock renewal predictions for now (can be enhanced with real prediction logic)
   const renewalPredictions = [
-    { day: 'Mon', predicted: 3, actual: 2 },
-    { day: 'Tue', predicted: 4, actual: 3 },
-    { day: 'Wed', predicted: 5, actual: 4 },
-    { day: 'Thu', predicted: 3, actual: 2 },
-    { day: 'Fri', predicted: 4, actual: 3 },
-    { day: 'Sat', predicted: 2, actual: 1 },
-    { day: 'Sun', predicted: 3, actual: 2 },
+    { day: 'Mon', predicted: Math.max(1, Math.round(predictedFailures * 0.15)), actual: 0 },
+    { day: 'Tue', predicted: Math.max(1, Math.round(predictedFailures * 0.18)), actual: 0 },
+    { day: 'Wed', predicted: Math.max(1, Math.round(predictedFailures * 0.20)), actual: 0 },
+    { day: 'Thu', predicted: Math.max(1, Math.round(predictedFailures * 0.15)), actual: 0 },
+    { day: 'Fri', predicted: Math.max(1, Math.round(predictedFailures * 0.18)), actual: 0 },
+    { day: 'Sat', predicted: Math.max(1, Math.round(predictedFailures * 0.08)), actual: 0 },
+    { day: 'Sun', predicted: Math.max(1, Math.round(predictedFailures * 0.06)), actual: 0 },
   ];
 
-  const chargebacks = [
-    { status: 'new', count: 2 },
-    { status: 'evidence', count: 1 },
-    { status: 'won', count: 8 },
-    { status: 'lost', count: 1 },
-  ];
+  const chargebacks = disputes?.summary.statusCounts
+    ? [
+        { status: 'new', count: disputes.summary.statusCounts.new },
+        { status: 'evidence', count: disputes.summary.statusCounts.evidence },
+        { status: 'won', count: disputes.summary.statusCounts.won },
+        { status: 'lost', count: disputes.summary.statusCounts.lost },
+      ]
+    : [
+        { status: 'new', count: 0 },
+        { status: 'evidence', count: 0 },
+        { status: 'won', count: 0 },
+        { status: 'lost', count: 0 },
+      ];
+
+  const winRate = disputes?.summary.winRate || 0;
+  const evidenceDueCount = disputes?.summary.evidenceDueCount || 0;
 
   return (
     <div className="space-y-8">
       {/* Key Metrics Cards */}
       <DashboardMetricsCards />
       
-      <StarterDashboard />
+      {/* Starter Dashboard with all Starter features */}
+      <StarterDashboard
+        overviewSuccessful={overviewSuccessful}
+        overviewFailed={overviewFailed}
+        overviewRevenue={overviewRevenue}
+        overviewSuccessRatePct={overviewSuccessRatePct}
+        overviewRangeLabel={overviewRangeLabel}
+        trendDays={trendDays}
+        failureReasons={failureReasons}
+        failureTotalAmount={failureTotalAmount}
+        failureCurrency={failureCurrency}
+        failureRangeLabel={failureRangeLabel}
+      />
 
       {/* Subscription Renewal Health */}
       <div className="card p-6">
@@ -42,12 +129,12 @@ const ProDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="text-sm text-slate-600 mb-1">Upcoming Renewals</div>
-            <div className="text-2xl font-bold text-slate-900">45</div>
+            <div className="text-2xl font-bold text-slate-900">{upcomingRenewals}</div>
             <div className="text-xs text-slate-500 mt-1">Next 7 days</div>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="text-sm text-slate-600 mb-1">Failed Renewals</div>
-            <div className="text-2xl font-bold text-slate-900">8</div>
+            <div className="text-2xl font-bold text-slate-900">{failedRenewals}</div>
             <div className="text-xs text-slate-500 mt-1">Last 7 days</div>
           </div>
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -63,7 +150,11 @@ const ProDashboard: React.FC = () => {
         </div>
         <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
           <div className="text-sm font-medium text-slate-900 mb-2">Smart Dunning Suggestions</div>
-          <div className="text-xs text-slate-600">Retry 8 failed renewals with updated payment methods. Contact 12 at-risk customers before next billing cycle.</div>
+          <div className="text-xs text-slate-600">
+            {failedRenewals > 0 && `Retry ${failedRenewals} failed renewal${failedRenewals !== 1 ? 's' : ''} with updated payment methods. `}
+            {atRiskCustomers > 0 && `Contact ${atRiskCustomers} at-risk customer${atRiskCustomers !== 1 ? 's' : ''} before next billing cycle.`}
+            {failedRenewals === 0 && atRiskCustomers === 0 && 'No immediate actions needed. All renewals are healthy.'}
+          </div>
         </div>
       </div>
 
@@ -72,7 +163,7 @@ const ProDashboard: React.FC = () => {
         <h3 className="text-base font-semibold text-slate-900 mb-4">Renewal Failure Prediction (AI)</h3>
         <div className="mb-4">
           <div className="text-sm text-slate-600 mb-2">Predicted failures in next 7 days</div>
-          <div className="text-2xl font-bold text-slate-900">24 customers</div>
+          <div className="text-2xl font-bold text-slate-900">{predictedFailures} customer{predictedFailures !== 1 ? 's' : ''}</div>
         </div>
         <div className="h-32 flex items-end justify-between gap-1">
           {renewalPredictions.map((day, index) => {
@@ -151,9 +242,14 @@ const ProDashboard: React.FC = () => {
           <div className="pt-4 border-t border-slate-100">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-slate-600">Win Rate</span>
-              <span className="text-lg font-bold text-slate-900">88.9%</span>
+              <span className="text-lg font-bold text-slate-900">{winRate.toFixed(1)}%</span>
             </div>
-            <div className="text-xs text-slate-500">2 evidence due in 3 days</div>
+            {evidenceDueCount > 0 && (
+              <div className="text-xs text-slate-500">{evidenceDueCount} evidence due in 3 days</div>
+            )}
+            {evidenceDueCount === 0 && disputes?.summary.total === 0 && (
+              <div className="text-xs text-slate-500">No active disputes</div>
+            )}
           </div>
         </div>
       </div>
@@ -203,18 +299,42 @@ const ProDashboard: React.FC = () => {
       <div className="card p-6">
         <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Full Mode)</h3>
         <div className="space-y-3">
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm font-medium text-slate-900 mb-2">Recommended Retry Logic</div>
-            <div className="text-xs text-slate-600">Enable automatic retry for 8 failed renewals. Suggested: Retry after 3 days with updated payment method.</div>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm font-medium text-slate-900 mb-2">Settings to Fix Renewal Failures</div>
-            <div className="text-xs text-slate-600">Update dunning settings: Enable email notifications 7 days before card expiry. Set up automatic card update flow.</div>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm font-medium text-slate-900 mb-2">Decline Code Explanation</div>
-            <div className="text-xs text-slate-600">"insufficient_funds" (8 occurrences): Customer's bank account lacks sufficient funds. Recommend retry after 2-3 days.</div>
-          </div>
+          {failedRenewals > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="text-sm font-medium text-slate-900 mb-2">Recommended Retry Logic</div>
+              <div className="text-xs text-slate-600">
+                Enable automatic retry for {failedRenewals} failed renewal{failedRenewals !== 1 ? 's' : ''}. 
+                Suggested: Retry after 3 days with updated payment method.
+              </div>
+            </div>
+          )}
+          {atRiskCustomers > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="text-sm font-medium text-slate-900 mb-2">Settings to Fix Renewal Failures</div>
+              <div className="text-xs text-slate-600">
+                Update dunning settings: Enable email notifications 7 days before card expiry. 
+                Set up automatic card update flow. {atRiskCustomers} customer{atRiskCustomers !== 1 ? 's are' : ' is'} at risk.
+              </div>
+            </div>
+          )}
+          {failureReasons && failureReasons.length > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="text-sm font-medium text-slate-900 mb-2">Top Decline Code Explanation</div>
+              <div className="text-xs text-slate-600">
+                "{failureReasons[0].reason}" ({failureReasons[0].count} occurrence{failureReasons[0].count !== 1 ? 's' : ''}): 
+                {failureReasons[0].reason === 'insufficient_funds' && ' Customer\'s bank account lacks sufficient funds. Recommend retry after 2-3 days.'}
+                {failureReasons[0].reason === 'expired_card' && ' Customer\'s card has expired. Request updated payment method.'}
+                {failureReasons[0].reason === 'generic_decline' && ' Card was declined by the bank. Contact customer for alternative payment method.'}
+                {!['insufficient_funds', 'expired_card', 'generic_decline'].includes(failureReasons[0].reason) && ' Review payment method and contact customer if needed.'}
+              </div>
+            </div>
+          )}
+          {failedRenewals === 0 && atRiskCustomers === 0 && (!failureReasons || failureReasons.length === 0) && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="text-sm font-medium text-slate-900 mb-2">All Systems Healthy</div>
+              <div className="text-xs text-slate-600">No immediate actions needed. Your subscription renewals are performing well.</div>
+            </div>
+          )}
         </div>
       </div>
 

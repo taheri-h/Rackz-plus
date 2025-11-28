@@ -111,13 +111,19 @@ router.post('/signin', async (req, res) => {
     // Find user
     const user = await User.findOne({ email: sanitizedEmail });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`❌ Signin attempt: User not found for email: ${sanitizedEmail}`);
+      }
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`❌ Signin attempt: Password mismatch for email: ${sanitizedEmail}`);
+      }
+      return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Generate token

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import StarterDashboard from './StarterDashboard';
 import IntegrationsSection from './IntegrationsSection';
 import DashboardMetricsCards from './DashboardMetricsCards';
@@ -72,6 +72,16 @@ type ProDashboardProps = {
       winRate: number;
       evidenceDueCount: number;
     };
+    disputes?: Array<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      reason: string;
+      created: number;
+      evidenceDueBy: number | null;
+      chargeId: string;
+    }>;
   };
 };
 
@@ -107,15 +117,38 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
   const highRiskCustomers = renewalMetrics?.highRiskCustomers || [];
   const dunningInsights = renewalMetrics?.dunningInsights || [];
 
+  // Filter state for disputes table
+  const [disputeFilter, setDisputeFilter] = useState<string>('all');
+
+  // Filter disputes based on selected status
+  const filteredDisputes = disputes?.disputes?.filter((dispute) => {
+    if (disputeFilter === 'all') return true;
+    if (disputeFilter === 'active') {
+      return ['needs_response', 'warning_needs_response', 'under_review', 'warning_under_review'].includes(dispute.status);
+    }
+    if (disputeFilter === 'won') return dispute.status === 'won';
+    if (disputeFilter === 'lost') return dispute.status === 'lost' || dispute.status === 'charge_refunded';
+    return dispute.status === disputeFilter;
+  }) || [];
+
   // Debug logging (development only)
-  if (process.env.NODE_ENV === 'development' && renewalMetricsStatus === 'loaded') {
-    console.log('📊 Pro Dashboard Data:', {
-      dunningInsightsCount: dunningInsights.length,
-      dunningInsights: dunningInsights,
-      failedRenewals,
-      atRiskCustomers,
-      highRiskCustomersCount,
-    });
+  if (process.env.NODE_ENV === 'development') {
+    if (renewalMetricsStatus === 'loaded') {
+      console.log('📊 Pro Dashboard Data:', {
+        dunningInsightsCount: dunningInsights.length,
+        dunningInsights: dunningInsights,
+        failedRenewals,
+        atRiskCustomers,
+        highRiskCustomersCount,
+      });
+    }
+    if (disputesStatus === 'loaded') {
+      console.log('💳 Disputes Data:', {
+        disputesCount: disputes?.disputes?.length || 0,
+        disputes: disputes?.disputes,
+        summary: disputes?.summary,
+      });
+    }
   }
 
   // Mock renewal predictions for now (can be enhanced with real prediction logic)
@@ -419,7 +452,21 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
         </div>
 
         <div className="card p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-4">Chargeback Watch</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-slate-900">Chargeback Watch</h3>
+            {disputesStatus === 'loaded' && disputes?.disputes && disputes.disputes.length > 0 && (
+              <select
+                value={disputeFilter}
+                onChange={(e) => setDisputeFilter(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+              >
+                <option value="all">All Disputes ({disputes.disputes.length})</option>
+                <option value="active">Active ({disputes.disputes.filter(d => ['needs_response', 'warning_needs_response', 'under_review', 'warning_under_review'].includes(d.status)).length})</option>
+                <option value="won">Won ({disputes.disputes.filter(d => d.status === 'won').length})</option>
+                <option value="lost">Lost ({disputes.disputes.filter(d => d.status === 'lost' || d.status === 'charge_refunded').length})</option>
+              </select>
+            )}
+          </div>
           {disputesStatus === 'loading' && (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
@@ -434,25 +481,135 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
           {disputesStatus === 'loaded' && (
             <>
               <div className="space-y-3 mb-4">
-            {chargebacks.map((cb, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-sm text-slate-600 capitalize">{cb.status}</span>
-                <span className="text-base font-semibold text-slate-900">{cb.count}</span>
+                {chargebacks.map((cb, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600 capitalize">{cb.status}</span>
+                    <span className="text-base font-semibold text-slate-900">{cb.count}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-slate-100">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-600">Win Rate</span>
-              <span className="text-lg font-bold text-slate-900">{winRate.toFixed(1)}%</span>
-            </div>
-            {evidenceDueCount > 0 && (
-              <div className="text-xs text-slate-500">{evidenceDueCount} evidence due in 3 days</div>
-            )}
-            {evidenceDueCount === 0 && disputes?.summary.total === 0 && (
-              <div className="text-xs text-slate-500">No active disputes</div>
-            )}
-          </div>
+              <div className="pt-4 border-t border-slate-100 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-slate-600">Win Rate</span>
+                  <span className="text-lg font-bold text-slate-900">{winRate.toFixed(1)}%</span>
+                </div>
+                {evidenceDueCount > 0 && (
+                  <div className="text-xs text-red-600 font-medium">{evidenceDueCount} evidence due in 3 days</div>
+                )}
+                {evidenceDueCount === 0 && disputes?.summary.total === 0 && (
+                  <div className="text-xs text-slate-500">No active disputes</div>
+                )}
+              </div>
+
+              {/* Chargeback Details Table */}
+              {disputes?.disputes && disputes.disputes.length > 0 ? (
+                filteredDisputes.length > 0 ? (
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-4">Dispute Details</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-200">
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Date</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Amount</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Status</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Reason</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Evidence Due</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredDisputes.map((dispute) => {
+                            const disputeDate = new Date(dispute.created * 1000);
+                            const evidenceDueDate = dispute.evidenceDueBy 
+                              ? new Date(dispute.evidenceDueBy * 1000)
+                              : null;
+                            const now = Date.now() / 1000;
+                            const daysUntilDue = evidenceDueDate && dispute.evidenceDueBy
+                              ? Math.ceil((dispute.evidenceDueBy - now) / (24 * 60 * 60))
+                              : null;
+                            const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && daysUntilDue > 0;
+                            const isOverdue = daysUntilDue !== null && daysUntilDue <= 0;
+
+                            const getStatusColor = (status: string) => {
+                              if (status === 'won') return 'text-green-600 bg-green-50';
+                              if (status === 'lost' || status === 'charge_refunded') return 'text-red-600 bg-red-50';
+                              if (status === 'needs_response' || status === 'warning_needs_response') return 'text-orange-600 bg-orange-50';
+                              if (status === 'under_review' || status === 'warning_under_review') return 'text-blue-600 bg-blue-50';
+                              return 'text-slate-600 bg-slate-50';
+                            };
+
+                            return (
+                              <tr key={dispute.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                <td className="py-3 px-4 text-sm text-slate-900">
+                                  {disputeDate.toLocaleDateString()}
+                                </td>
+                                <td className="py-3 px-4 text-sm font-medium text-slate-900">
+                                  {new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: dispute.currency.toUpperCase(),
+                                  }).format(dispute.amount / 100)}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(dispute.status)}`}>
+                                    {dispute.status.replace(/_/g, ' ')}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-slate-600 capitalize">
+                                  {dispute.reason ? dispute.reason.replace(/_/g, ' ') : '—'}
+                                </td>
+                                <td className="py-3 px-4 text-sm">
+                                  {evidenceDueDate ? (
+                                    <div>
+                                      <div className={`font-medium ${
+                                        isOverdue ? 'text-red-600' : 
+                                        isUrgent ? 'text-orange-600' : 
+                                        'text-slate-600'
+                                      }`}>
+                                        {evidenceDueDate.toLocaleDateString()}
+                                      </div>
+                                      {isOverdue && (
+                                        <div className="text-xs text-red-600">Overdue</div>
+                                      )}
+                                      {isUrgent && !isOverdue && (
+                                        <div className="text-xs text-orange-600">{daysUntilDue} day{daysUntilDue !== 1 ? 's' : ''} left</div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400">—</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <a
+                                    href={`https://dashboard.stripe.com/test/disputes/${dispute.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-slate-600 hover:text-slate-900 underline"
+                                  >
+                                    View in Stripe
+                                  </a>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <div className="text-center py-4 text-slate-500 text-sm">
+                      No disputes found with selected filter
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <div className="text-center py-4">
+                    <p className="text-sm text-slate-500">No dispute details available</p>
+                  </div>
+                </div>
+              )}
             </>
           )}
           {disputesStatus === 'idle' && (

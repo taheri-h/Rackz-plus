@@ -86,6 +86,16 @@ const Dashboard: React.FC = () => {
       winRate: number;
       evidenceDueCount: number;
     };
+    disputes?: Array<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      reason: string;
+      created: number;
+      evidenceDueBy: number | null;
+      chargeId: string;
+    }>;
   } | null>(null);
 
   useEffect(() => {
@@ -455,6 +465,7 @@ const Dashboard: React.FC = () => {
           const disputesData = await disputesRes.json();
           setDisputes({
             summary: disputesData.summary,
+            disputes: disputesData.disputes || [],
           });
           setDisputesStatus('loaded');
         } else {

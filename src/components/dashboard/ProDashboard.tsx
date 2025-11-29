@@ -198,6 +198,9 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
         failureRangeLabel={failureRangeLabel}
       />
 
+      {/* Integrations - Pro plan */}
+      <IntegrationsSection plan="pro" />
+
       {/* Subscription Renewal Health */}
       <div className="card p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-6">Subscription Renewal Health</h2>
@@ -236,89 +239,12 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
             <div className="text-xs text-slate-500 mt-1">Next 30 days</div>
           </div>
         </div>
-        {dunningInsights.length > 0 ? (
-          <div className="space-y-3">
-            {dunningInsights.map((insight, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-xl border ${
-                  insight.priority === 'high'
-                    ? 'bg-red-50 border-red-200'
-                    : insight.priority === 'medium'
-                    ? 'bg-orange-50 border-orange-200'
-                    : 'bg-slate-50 border-slate-100'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className={`text-sm font-medium ${
-                      insight.priority === 'high' ? 'text-red-900' : 
-                      insight.priority === 'medium' ? 'text-orange-900' : 
-                      'text-slate-900'
-                    }`}>
-                      {insight.title}
-                    </div>
-                    <div className={`text-xs mt-1 ${
-                      insight.priority === 'high' ? 'text-red-700' : 
-                      insight.priority === 'medium' ? 'text-orange-700' : 
-                      'text-slate-600'
-                    }`}>
-                      {insight.description}
-                    </div>
-                  </div>
-                  {insight.priority === 'high' && (
-                    <span className="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-900 rounded">
-                      URGENT
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      // Action handler - can be enhanced to actually perform actions
-                      const stripeBaseUrl = 'https://dashboard.stripe.com/test';
-                      if (insight.action === 'send_card_update_email') {
-                        // In production, this would trigger an email or API call
-                        alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would send card update emails to customers.`);
-                      } else if (insight.action === 'retry_payment') {
-                        alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would schedule payment retries.`);
-                      } else if (insight.action === 'contact_customer') {
-                        window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
-                        alert(`Opening Stripe dashboard to review ${insight.affectedCount} past due subscription(s).`);
-                      } else {
-                        window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
-                      }
-                    }}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      insight.priority === 'high'
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : insight.priority === 'medium'
-                        ? 'bg-orange-600 text-white hover:bg-orange-700'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {insight.actionLabel}
-                  </button>
-                  <a
-                    href={`https://dashboard.stripe.com/test/subscriptions`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-slate-600 hover:text-slate-900 underline"
-                  >
-                    View in Stripe
-                  </a>
-                </div>
-              </div>
-            ))}
+        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="text-sm font-medium text-slate-900 mb-2">Smart Dunning Suggestions</div>
+          <div className="text-xs text-slate-600">
+            No immediate actions needed. All renewals are healthy.
           </div>
-        ) : (
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm font-medium text-slate-900 mb-2">Smart Dunning Suggestions</div>
-            <div className="text-xs text-slate-600">
-              No immediate actions needed. All renewals are healthy.
-            </div>
-          </div>
-        )}
+        </div>
           </>
         )}
         {renewalMetricsStatus === 'idle' && (
@@ -667,167 +593,6 @@ const ProDashboard: React.FC<ProDashboardProps> = ({
         </div>
       )}
 
-      {/* Checkout Deep Dive */}
-      <div className="card p-6">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">Checkout Deep Dive</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-sm text-slate-600 mb-3">Browser Performance</div>
-            <div className="space-y-2">
-              {['Chrome', 'Safari', 'Firefox', 'Edge'].map((browser, index) => {
-                const rates = [96.5, 94.2, 93.8, 95.1];
-                return (
-                  <div key={index}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-600">{browser}</span>
-                      <span className="font-medium text-slate-900">{rates[index]}%</span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-slate-900" style={{ width: `${rates[index]}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-slate-600 mb-3">Top Decline Reasons</div>
-            <div className="space-y-2">
-              {[
-                { reason: 'Insufficient funds', count: 8 },
-                { reason: 'Card expired', count: 5 },
-                { reason: 'Invalid card', count: 3 },
-              ].map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-xs text-slate-600">{item.reason}</span>
-                  <span className="text-sm font-medium text-slate-900">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Agent Full Mode */}
-      <div className="card p-6">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Full Mode)</h3>
-        {renewalMetricsStatus === 'loading' && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
-            <p className="text-xs text-slate-600 mt-2">Analyzing payment patterns...</p>
-          </div>
-        )}
-        {renewalMetricsStatus === 'error' && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-xs text-red-700">Unable to load AI insights</p>
-          </div>
-        )}
-        {renewalMetricsStatus === 'loaded' && (
-          <div className="space-y-3">
-            {dunningInsights.length > 0 ? (
-              <>
-                {dunningInsights.map((insight, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl border ${
-                      insight.priority === 'high'
-                        ? 'bg-red-50 border-red-200'
-                        : insight.priority === 'medium'
-                        ? 'bg-orange-50 border-orange-200'
-                        : 'bg-slate-50 border-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className={`text-sm font-medium ${
-                          insight.priority === 'high' ? 'text-red-900' : 
-                          insight.priority === 'medium' ? 'text-orange-900' : 
-                          'text-slate-900'
-                        }`}>
-                          {insight.title}
-                        </div>
-                        <div className={`text-xs mt-1 ${
-                          insight.priority === 'high' ? 'text-red-700' : 
-                          insight.priority === 'medium' ? 'text-orange-700' : 
-                          'text-slate-600'
-                        }`}>
-                          {insight.description}
-                        </div>
-                      </div>
-                      {insight.priority === 'high' && (
-                        <span className="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-900 rounded">
-                          URGENT
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          // Action handler - can be enhanced to actually perform actions
-                          const stripeBaseUrl = 'https://dashboard.stripe.com/test';
-                          if (insight.action === 'send_card_update_email') {
-                            // In production, this would trigger an email or API call
-                            alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would send card update emails to customers.`);
-                          } else if (insight.action === 'retry_payment') {
-                            alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would schedule payment retries.`);
-                          } else if (insight.action === 'contact_customer') {
-                            window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
-                            alert(`Opening Stripe dashboard to review ${insight.affectedCount} past due subscription(s).`);
-                          } else {
-                            window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
-                          }
-                        }}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                          insight.priority === 'high'
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : insight.priority === 'medium'
-                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                            : 'bg-slate-900 text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        {insight.actionLabel}
-                      </button>
-                      <a
-                        href={`https://dashboard.stripe.com/test/subscriptions`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-slate-600 hover:text-slate-900 underline"
-                      >
-                        View in Stripe
-                      </a>
-                    </div>
-                  </div>
-                ))}
-                {failureReasons && failureReasons.length > 0 && (
-                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="text-sm font-medium text-slate-900 mb-2">Top Decline Code Analysis</div>
-                    <div className="text-xs text-slate-600">
-                      "{failureReasons[0].reason}" ({failureReasons[0].count} occurrence{failureReasons[0].count !== 1 ? 's' : ''}): 
-                      {failureReasons[0].reason === 'insufficient_funds' && ' Customer\'s bank account lacks sufficient funds. Recommend retry after 2-3 days.'}
-                      {failureReasons[0].reason === 'expired_card' && ' Customer\'s card has expired. Request updated payment method.'}
-                      {failureReasons[0].reason === 'generic_decline' && ' Card was declined by the bank. Contact customer for alternative payment method.'}
-                      {!['insufficient_funds', 'expired_card', 'generic_decline'].includes(failureReasons[0].reason) && ' Review payment method and contact customer if needed.'}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                <div className="text-sm font-medium text-green-900 mb-2">✅ All Systems Healthy</div>
-                <div className="text-xs text-green-700">No immediate actions needed. Your subscription renewals are performing well.</div>
-              </div>
-            )}
-          </div>
-        )}
-        {renewalMetricsStatus === 'idle' && (
-          <div className="text-center py-4 text-slate-500 text-xs">
-            AI insights will load shortly...
-          </div>
-        )}
-      </div>
-
-      {/* Integrations */}
-      <IntegrationsSection plan="pro" />
     </div>
   );
 };

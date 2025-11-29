@@ -6,6 +6,7 @@ import StarterDashboard from '../components/dashboard/StarterDashboard';
 import ProDashboard from '../components/dashboard/ProDashboard';
 import ScaleDashboard from '../components/dashboard/ScaleDashboard';
 import PaymentHealthCard from '../components/dashboard/PaymentHealthCard';
+import IntegrationsSection from '../components/dashboard/IntegrationsSection';
 import { apiCall } from '../utils/api';
 import ConnectStripeButton from '../components/ConnectStripeButton';
 
@@ -1115,6 +1116,162 @@ const Dashboard: React.FC = () => {
                     })()}
                   </div>
                 </div>
+
+                {/* AI Payment Agent (Full) - Pro plan (Full Mode) */}
+                {packageType === 'pro' && (
+                  <div className="card p-6">
+                    <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Full)</h3>
+                    <div className="space-y-3">
+                      {/* Full Mode Results - Dunning Insights */}
+                      {renewalMetricsStatus === 'loading' && (
+                        <div className="text-center py-8">
+                          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+                          <p className="text-xs text-slate-600 mt-2">Analyzing subscription renewals...</p>
+                        </div>
+                      )}
+                      {renewalMetricsStatus === 'error' && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                          <p className="text-xs text-red-700">Unable to load subscription insights</p>
+                        </div>
+                      )}
+                      {renewalMetricsStatus === 'loaded' && (
+                        <div className="space-y-3">
+                          {renewalMetrics?.dunningInsights && renewalMetrics.dunningInsights.length > 0 ? (
+                            <>
+                              {renewalMetrics.dunningInsights.map((insight, index) => (
+                                <div
+                                  key={index}
+                                  className={`p-4 rounded-xl border ${
+                                    insight.priority === 'high'
+                                      ? 'bg-red-50 border-red-200'
+                                      : insight.priority === 'medium'
+                                      ? 'bg-orange-50 border-orange-200'
+                                      : 'bg-slate-50 border-slate-100'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <div className={`text-sm font-medium ${
+                                        insight.priority === 'high' ? 'text-red-900' : 
+                                        insight.priority === 'medium' ? 'text-orange-900' : 
+                                        'text-slate-900'
+                                      }`}>
+                                        {insight.title}
+                                      </div>
+                                      <div className={`text-xs mt-1 ${
+                                        insight.priority === 'high' ? 'text-red-700' : 
+                                        insight.priority === 'medium' ? 'text-orange-700' : 
+                                        'text-slate-600'
+                                      }`}>
+                                        {insight.description}
+                                      </div>
+                                    </div>
+                                    {insight.priority === 'high' && (
+                                      <span className="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-900 rounded">
+                                        URGENT
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        const stripeBaseUrl = 'https://dashboard.stripe.com/test';
+                                        if (insight.action === 'send_card_update_email') {
+                                          alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would send card update emails to customers.`);
+                                        } else if (insight.action === 'retry_payment') {
+                                          alert(`Action: ${insight.actionLabel}\nAffected: ${insight.affectedCount} subscription(s)\n\nIn production, this would schedule payment retries.`);
+                                        } else if (insight.action === 'contact_customer') {
+                                          window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                                          alert(`Opening Stripe dashboard to review ${insight.affectedCount} past due subscription(s).`);
+                                        } else {
+                                          window.open(`${stripeBaseUrl}/subscriptions`, '_blank');
+                                        }
+                                      }}
+                                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                        insight.priority === 'high'
+                                          ? 'bg-red-600 text-white hover:bg-red-700'
+                                          : insight.priority === 'medium'
+                                          ? 'bg-orange-600 text-white hover:bg-orange-700'
+                                          : 'bg-slate-900 text-white hover:bg-slate-800'
+                                      }`}
+                                    >
+                                      {insight.actionLabel}
+                                    </button>
+                                    <a
+                                      href={`https://dashboard.stripe.com/test/subscriptions`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-slate-600 hover:text-slate-900 underline"
+                                    >
+                                      View in Stripe
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          ) : (
+                            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                              <div className="text-sm font-medium text-green-900 mb-2">✅ All Systems Healthy</div>
+                              <div className="text-xs text-green-700">No immediate actions needed. Your subscription renewals are performing well.</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {renewalMetricsStatus === 'idle' && (
+                        <div className="text-center py-4 text-slate-500 text-xs">
+                          Subscription insights will load shortly...
+                        </div>
+                      )}
+
+                      {/* Checkout Error Info - Below dunning insights */}
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="text-sm text-slate-900 mb-2">What failed?</div>
+                          <div className="text-xs text-slate-600">8 checkout errors on mobile devices. Primary cause: API key misconfiguration.</div>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className="text-sm text-slate-900 mb-2">Why did it fail?</div>
+                          <div className="text-xs text-slate-600">Mobile checkout requests are being rejected due to incorrect API key permissions.</div>
+                        </div>
+                      </div>
+
+                      {/* Start now button */}
+                      <div className="mt-4">
+                        <a 
+                          href="#pricing" 
+                          className="block w-full py-3 px-4 bg-slate-900 text-white rounded-xl text-center text-sm font-medium hover:bg-slate-800 transition-colors"
+                        >
+                          Start now
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Payment Agent (Limited) - Only for Starter plan */}
+                {packageType === 'starter' && (
+                  <div className="card p-6">
+                    <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Limited)</h3>
+                    <div className="space-y-3">
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="text-sm text-slate-900 mb-2">What failed?</div>
+                        <div className="text-xs text-slate-600">8 checkout errors on mobile devices. Primary cause: API key misconfiguration.</div>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="text-sm text-slate-900 mb-2">Why did it fail?</div>
+                        <div className="text-xs text-slate-600">Mobile checkout requests are being rejected due to incorrect API key permissions.</div>
+                      </div>
+                      <div className="mt-4">
+                        <a 
+                          href="#pricing" 
+                          className="block w-full py-3 px-4 bg-slate-900 text-white rounded-xl text-center text-sm font-medium hover:bg-slate-800 transition-colors"
+                        >
+                          Start now
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -1526,71 +1683,77 @@ const Dashboard: React.FC = () => {
         {packageType && (
           <>
             {packageType === 'starter' && (
-              <StarterDashboard
-                overviewSuccessful={
-                  stripeSummary
-                    ? stripeSummary.totalCount - stripeSummary.failedCount
-                    : undefined
-                }
-                overviewFailed={stripeSummary?.failedCount}
-                overviewRevenue={
-                  stripeSummary?.totalVolume
-                    ? stripeSummary.totalVolume / 100
-                    : undefined
-                }
-                overviewSuccessRatePct={healthMetrics?.successRatePct}
-                overviewRangeLabel={
-                  stripeRangeDays === 365
-                    ? '12 months'
-                    : stripeRangeDays === 180
-                    ? '6 months'
-                    : `${stripeRangeDays} days`
-                }
-                trendDays={(() => {
-                  const days: { label: string; success: number; failed: number }[] = [];
-                  const now = new Date();
-                  const dayKeys: string[] = [];
-                  for (let i = 6; i >= 0; i--) {
-                    const d = new Date(now);
-                    d.setDate(d.getDate() - i);
-                    const key = d.toISOString().slice(0, 10);
-                    dayKeys.push(key);
-                    days.push({
-                      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
-                      success: 0,
-                      failed: 0,
-                    });
+              <>
+                <StarterDashboard
+                  overviewSuccessful={
+                    stripeSummary
+                      ? stripeSummary.totalCount - stripeSummary.failedCount
+                      : undefined
                   }
-
-                  const sevenDaysAgoMs =
-                    now.getTime() - 7 * 24 * 60 * 60 * 1000;
-
-                  stripeCharges.forEach((charge) => {
-                    const createdMs = charge.created * 1000;
-                    if (createdMs < sevenDaysAgoMs) return;
-                    const d = new Date(createdMs);
-                    const key = d.toISOString().slice(0, 10);
-                    const index = dayKeys.indexOf(key);
-                    if (index === -1) return;
-
-                    const isSuccess =
-                      charge.paid && charge.status === 'succeeded';
-                    if (isSuccess) {
-                      days[index].success += 1;
-                    } else {
-                      days[index].failed += 1;
+                  overviewFailed={stripeSummary?.failedCount}
+                  overviewRevenue={
+                    stripeSummary?.totalVolume
+                      ? stripeSummary.totalVolume / 100
+                      : undefined
+                  }
+                  overviewSuccessRatePct={healthMetrics?.successRatePct}
+                  overviewRangeLabel={
+                    stripeRangeDays === 365
+                      ? '12 months'
+                      : stripeRangeDays === 180
+                      ? '6 months'
+                      : `${stripeRangeDays} days`
+                  }
+                  trendDays={(() => {
+                    const days: { label: string; success: number; failed: number }[] = [];
+                    const now = new Date();
+                    const dayKeys: string[] = [];
+                    for (let i = 6; i >= 0; i--) {
+                      const d = new Date(now);
+                      d.setDate(d.getDate() - i);
+                      const key = d.toISOString().slice(0, 10);
+                      dayKeys.push(key);
+                      days.push({
+                        label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+                        success: 0,
+                        failed: 0,
+                      });
                     }
-                  });
 
-                  return days;
-                })()}
-                failureReasons={failureReasons?.reasons}
-                failureTotalAmount={failureReasons?.totalFailedAmount}
-                failureCurrency={failureReasons?.currency}
-                failureRangeLabel={
-                  stripeRangeDays >= 30 ? '30 days' : '7 days'
-                }
-              />
+                    const sevenDaysAgoMs =
+                      now.getTime() - 7 * 24 * 60 * 60 * 1000;
+
+                    stripeCharges.forEach((charge) => {
+                      const createdMs = charge.created * 1000;
+                      if (createdMs < sevenDaysAgoMs) return;
+                      const d = new Date(createdMs);
+                      const key = d.toISOString().slice(0, 10);
+                      const index = dayKeys.indexOf(key);
+                      if (index === -1) return;
+
+                      const isSuccess =
+                        charge.paid && charge.status === 'succeeded';
+                      if (isSuccess) {
+                        days[index].success += 1;
+                      } else {
+                        days[index].failed += 1;
+                      }
+                    });
+
+                    return days;
+                  })()}
+                  failureReasons={failureReasons?.reasons}
+                  failureTotalAmount={failureReasons?.totalFailedAmount}
+                  failureCurrency={failureReasons?.currency}
+                  failureRangeLabel={
+                    stripeRangeDays >= 30 ? '30 days' : '7 days'
+                  }
+                />
+                {/* Integrations - Starter plan */}
+                <div className="mt-8">
+                  <IntegrationsSection plan="starter" />
+                </div>
+              </>
             )}
             {packageType === 'pro' && (
               <ProDashboard

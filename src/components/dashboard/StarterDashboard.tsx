@@ -1,5 +1,4 @@
 import React from 'react';
-import IntegrationsSection from './IntegrationsSection';
 
 type TrendDay = {
   label: string;
@@ -32,31 +31,6 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
   failureCurrency,
   failureRangeLabel,
 }) => {
-  // Mock defaults - overridden when real metrics are provided
-  const totalRevenue = overviewRevenue ?? 12450;
-  const successfulPayments = overviewSuccessful ?? 342;
-  const failedPayments = overviewFailed ?? 21;
-  const successRate = overviewSuccessRatePct ?? 94.2;
-
-  const last7Days =
-    trendDays && trendDays.length === 7
-      ? trendDays.map((d) => ({ day: d.label, success: d.success, failed: d.failed }))
-      : [
-          { day: 'Mon', success: 45, failed: 3 },
-          { day: 'Tue', success: 52, failed: 2 },
-          { day: 'Wed', success: 48, failed: 4 },
-          { day: 'Thu', success: 51, failed: 3 },
-          { day: 'Fri', success: 55, failed: 2 },
-          { day: 'Sat', success: 47, failed: 3 },
-          { day: 'Sun', success: 44, failed: 4 },
-        ];
-
-  const baseAlerts = [
-    { type: 'critical', message: 'Checkout error detected on mobile', time: '2h ago' },
-    { type: 'warning', message: 'Failed payments increased by 15%', time: '5h ago' },
-    { type: 'critical', message: 'Webhook failure detected', time: '1d ago' },
-  ];
-
   return (
     <div className="space-y-8">
       {/* Checkout Health */}
@@ -97,31 +71,6 @@ const StarterDashboard: React.FC<StarterDashboardProps> = ({
         </div>
       </div>
 
-      {/* AI Agent */}
-      <div className="card p-6">
-        <h3 className="text-base font-semibold text-slate-900 mb-4">AI Payment Agent (Limited)</h3>
-        <div className="space-y-3">
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm text-slate-900 mb-2">What failed?</div>
-            <div className="text-xs text-slate-600">8 checkout errors on mobile devices. Primary cause: API key misconfiguration.</div>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <div className="text-sm text-slate-900 mb-2">Why did it fail?</div>
-            <div className="text-xs text-slate-600">Mobile checkout requests are being rejected due to incorrect API key permissions.</div>
-          </div>
-          <div className="mt-4">
-            <a 
-              href="#pricing" 
-              className="block w-full py-3 px-4 bg-slate-900 text-white rounded-xl text-center text-sm font-medium hover:bg-slate-800 transition-colors"
-            >
-              Start now
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Integrations */}
-      <IntegrationsSection plan="starter" />
     </div>
   );
 };
